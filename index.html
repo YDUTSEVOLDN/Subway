@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>智慧交通监控与调度平台</title>
+    
+    <!-- 从本地存储加载百度地图API密钥 -->
+    <script>
+      window.loadBaiduMapAPI = function() {
+        // 尝试从本地存储获取API密钥
+        var savedSettings = localStorage.getItem('mapSettings');
+        var apiKey = 'kZTGRGj89WiMMzSvpvKRf6GW9RYNMaxx'; // 默认密钥
+        
+        if (savedSettings) {
+          try {
+            var settings = JSON.parse(savedSettings);
+            if (settings.apiKey) {
+              apiKey = settings.apiKey;
+            }
+          } catch (e) {
+            console.error('解析地图设置失败:', e);
+          }
+        }
+        
+        // 动态加载百度地图API
+        var script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'https://api.map.baidu.com/api?v=3.0&ak=' + apiKey;
+        document.head.appendChild(script);
+        
+        console.log('百度地图API加载中...');
+      };
+      
+      // 页面加载完成后加载地图API
+      window.addEventListener('load', window.loadBaiduMapAPI);
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
