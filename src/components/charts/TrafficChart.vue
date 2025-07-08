@@ -82,8 +82,38 @@ const initChart = () => {
 const updateChart = () => {
   if (!chartInstance.value) return;
   
+  // 处理不同类型的trafficData
+  let processedTrafficData: TrafficData[] = [];
+  
+  // 如果是TrafficFlowData类型，转换为TrafficData数组
+  if (props.trafficData && 'currentFlow' in props.trafficData) {
+    // 从TrafficFlowData中提取数据
+    const currentHour = new Date().getHours();
+    
+    // 添加当前流量
+    processedTrafficData.push({
+      time: `${currentHour}:00`,
+      inFlow: props.trafficData.currentFlow.inflow,
+      outFlow: props.trafficData.currentFlow.outflow
+    });
+    
+    // 添加预测数据
+    if (props.trafficData.predictions) {
+      props.trafficData.predictions.forEach(pred => {
+        processedTrafficData.push({
+          time: `${pred.hour}:00`,
+          inFlow: pred.inflow,
+          outFlow: pred.outflow
+        });
+      });
+    }
+  } else if (Array.isArray(props.trafficData)) {
+    // 如果已经是数组，直接使用
+    processedTrafficData = props.trafficData;
+  }
+  
   // 合并历史数据和预测数据
-  const allData = [...props.trafficData, ...props.predictionData];
+  const allData = [...processedTrafficData, ...(props.predictionData || [])];
   
   // 提取时间点作为X轴数据
   const times = allData.map(item => item.time);

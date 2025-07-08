@@ -22,7 +22,7 @@
     </div>
     
     <div class="map-section">
-      <BaiduMap ref="mapRef" />
+      <AMapComponent ref="mapRef" />
       
       <div class="info-panel" v-if="mapStore.selectedStation">
         <div class="panel-header">
@@ -110,7 +110,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useMapStore } from '../stores/mapStore';
-import BaiduMap from '../components/common/BaiduMap.vue';
+import AMapComponent from '../components/common/AMapComponent.vue';
 import TrafficChart from '../components/charts/TrafficChart.vue';
 import api from '../api';
 import { useRouter } from 'vue-router';
@@ -258,19 +258,23 @@ function createDispatchPlan() {
   router.push('/dispatch');
 }
 
+// 在组件挂载时加载站点数据
 onMounted(async () => {
-  // 加载所有站点数据
+  console.log('Dashboard组件已挂载，开始加载站点数据');
   try {
-    const stations = await api.getStations();
-    // 转换stations类型，确保id字段为string类型
-    const typedStations = stations.map(station => ({
-      ...station,
-      id: String(station.id)
-    }));
-    // 使用正确的方法名或直接设置数据
-    mapStore.stations = typedStations as Station[];
+    // 延迟加载站点数据，确保地图组件已完全加载
+    setTimeout(async () => {
+      await mapStore.loadStations();
+      console.log('站点数据加载完成:', mapStore.stations);
+      
+      // 如果有地图引用，尝试添加站点标记
+      if (mapRef.value) {
+        console.log('尝试调用地图组件的addStationMarkers方法');
+        (mapRef.value as any).addStationMarkers();
+      }
+    }, 1000);
   } catch (error) {
-    console.error('加载站点数据失败', error);
+    console.error('加载站点数据失败:', error);
   }
 });
 </script>

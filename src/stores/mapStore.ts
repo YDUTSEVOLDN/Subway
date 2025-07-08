@@ -44,6 +44,7 @@ export const useMapStore = defineStore({
     trafficData: [] as TrafficData[],
     currentTime: new Date(),
     predictionData: [] as TrafficData[],
+    trafficLayer: null as any, // 添加路况图层
     
     // 调度方案相关
     dispatchPlans: [] as {
@@ -152,8 +153,9 @@ export const useMapStore = defineStore({
             }
           ];
           
+          console.log('站点数据已加载:', this.stations);
           resolve();
-        }, 500);
+        }, 100); // 减少延迟时间
       });
     },
     

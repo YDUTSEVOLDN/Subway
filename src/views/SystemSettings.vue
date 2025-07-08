@@ -10,15 +10,15 @@
       </template>
       
       <el-form :model="mapSettings" label-position="top">
-        <el-form-item label="百度地图 API 密钥" required>
+        <el-form-item label="高德地图 API 密钥" required>
           <el-input 
             v-model="mapSettings.apiKey" 
-            placeholder="输入百度地图API密钥"
+            placeholder="输入高德地图API密钥"
             :show-password="true"
           />
           <div class="form-item-tip">
             <el-icon><InfoFilled /></el-icon>
-            <span>请在<a href="https://lbsyun.baidu.com/" target="_blank">百度地图开放平台</a>申请API密钥</span>
+            <span>请在<a href="https://lbs.amap.com/" target="_blank">高德地图开放平台</a>申请API密钥</span>
           </div>
         </el-form-item>
         
@@ -63,7 +63,7 @@
         <el-descriptions-item label="系统版本">v1.0.0</el-descriptions-item>
         <el-descriptions-item label="前端框架">Vue 3 + Vite + TypeScript</el-descriptions-item>
         <el-descriptions-item label="UI组件库">Element Plus</el-descriptions-item>
-        <el-descriptions-item label="地图引擎">百度地图 JavaScript API</el-descriptions-item>
+        <el-descriptions-item label="地图引擎">高德地图 JavaScript API</el-descriptions-item>
         <el-descriptions-item label="图表库">Apache ECharts</el-descriptions-item>
       </el-descriptions>
     </el-card>
@@ -101,7 +101,7 @@ const loadSettings = () => {
     }
   } else {
     // 使用默认配置
-    mapSettings.value.apiKey = mapConfig.baiduMapKey || '';
+    mapSettings.value.apiKey = mapConfig.amapKey || '';
     mapSettings.value.defaultZoom = mapConfig.defaultZoom || 13;
   }
 };
@@ -109,7 +109,7 @@ const loadSettings = () => {
 // 保存设置
 const saveSettings = async () => {
   if (!mapSettings.value.apiKey) {
-    ElMessage.warning('请输入百度地图API密钥');
+    ElMessage.warning('请输入高德地图API密钥');
     return;
   }
   
@@ -125,7 +125,7 @@ const saveSettings = async () => {
     ElMessage.success('设置保存成功，请刷新页面以应用新设置');
     
     // 更新当前页面的API密钥
-    if (window.BMap) {
+    if (window.AMap) {
       console.log('地图API已加载，需要刷新页面应用新密钥');
     }
   } catch (error) {
@@ -138,7 +138,7 @@ const saveSettings = async () => {
 
 // 重置设置
 const resetSettings = () => {
-  mapSettings.value.apiKey = mapConfig.baiduMapKey || '';
+  mapSettings.value.apiKey = mapConfig.amapKey || '';
   mapSettings.value.defaultZoom = mapConfig.defaultZoom || 13;
   mapSettings.value.mapType = 'normal';
 };
