@@ -42,10 +42,10 @@
       </template>
       
       <el-form :model="mapSettings" label-position="top" :rules="mapRules" ref="mapSettingsForm">
-        <el-form-item label="百度地图 API 密钥" prop="baiduMapAk">
+        <el-form-item label="高德地图 API 密钥" prop="amapKey">
           <el-input 
-            v-model="mapSettings.baiduMapAk" 
-            placeholder="输入百度地图API密钥" 
+            v-model="mapSettings.amapKey" 
+            placeholder="输入高德地图API密钥" 
             show-password
           ></el-input>
         </el-form-item>
@@ -132,7 +132,7 @@ const baseSettings = reactive({
 
 // 地图设置
 const mapSettings = reactive({
-  baiduMapAk: '',
+  amapKey: '',
   defaultZoom: 15,
   mapType: 'normal'
 });
@@ -153,8 +153,8 @@ const rules = {
 };
 
 const mapRules = {
-  baiduMapAk: [
-    { required: true, message: '请输入百度地图API密钥', trigger: 'blur' },
+  amapKey: [
+    { required: true, message: '请输入高德地图API密钥', trigger: 'blur' },
     { min: 20, message: '密钥长度不正确', trigger: 'blur' }
   ],
   defaultZoom: [

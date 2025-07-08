@@ -127,7 +127,7 @@
       <el-col :span="18">
         <el-card class="map-card">
           <div class="map-container">
-            <baidu-map class="map" ref="baiduMap" />
+            <a-map-component class="map" ref="aMapComponent" />
             <path-visualizer
               v-if="currentPath && mapInstance"
               :path="currentPath"
@@ -190,14 +190,14 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { Position, Refresh, Delete } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import BaiduMap from '../components/common/BaiduMap.vue';
+import AMapComponent from '../components/common/AMapComponent.vue';
 import PathVisualizer from '../components/common/PathVisualizer.vue';
 import { useMapStore, Station } from '../stores/mapStore';
 
 // 地图与站点数据
 const mapStore = useMapStore();
 const stations = ref<Station[]>([]);
-const baiduMap = ref<InstanceType<typeof BaiduMap> | null>(null);
+const aMapComponent = ref<InstanceType<typeof AMapComponent> | null>(null);
 const mapInstance = ref(null);
 
 // 路径参数
@@ -429,8 +429,8 @@ const disablePastDate = (date: Date) => {
 
 // 监听地图实例变化
 watch(() => {
-  if (baiduMap.value) {
-    return (baiduMap.value as any).mapInstance;
+  if (aMapComponent.value) {
+    return (aMapComponent.value as any).mapInstance;
   }
   return null;
 }, (newVal) => {
@@ -448,11 +448,11 @@ onMounted(async () => {
   console.log('站点数据加载完成:', stations.value);
   
   // 确保地图组件初始化
-  console.log('地图组件引用:', baiduMap.value);
+  console.log('地图组件引用:', aMapComponent.value);
   
   // 设置一个延迟，确保DOM完全渲染
   setTimeout(() => {
-    if (baiduMap.value) {
+    if (aMapComponent.value) {
       console.log('地图组件实例获取成功');
       // 地图实例会通过watch监听器自动设置
     } else {

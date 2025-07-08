@@ -1,206 +1,199 @@
 <template>
   <div class="dispatch-container">
-    <el-row :gutter="20">
-      <!-- 左侧：地图和站点信息 -->
-      <el-col :span="16">
-        <div class="map-container">
-          <div class="map-wrapper">
-            <BaiduMap ref="mapRef" />
-          </div>
-          <div class="map-controls">
-            <el-button-group>
-              <el-tooltip content="显示/隐藏站点覆盖范围">
-                <el-button
-                  :type="showCoverage ? 'primary' : 'default'"
-                  @click="toggleCoverage"
-                >
-                  <el-icon><Aim /></el-icon>
-                </el-button>
-              </el-tooltip>
-              <el-tooltip content="显示/隐藏所有站点">
-                <el-button
-                  :type="showAllStations ? 'primary' : 'default'"
-                  @click="toggleAllStations"
-                >
-                  <el-icon><LocationInformation /></el-icon>
-                </el-button>
-              </el-tooltip>
-              <el-tooltip content="显示/隐藏共享单车">
-                <el-button
-                  :type="showBikes ? 'primary' : 'default'"
-                  @click="toggleBikes"
-                >
-                  <el-icon><BicycleIcon /></el-icon>
-                </el-button>
-              </el-tooltip>
-            </el-button-group>
-          </div>
-          
-          <!-- 如果选中了站点，显示站点信息 -->
-          <el-card v-if="selectedStation" class="station-info-panel">
-            <template #header>
-              <div class="card-header">
-                <h3>{{ selectedStation.name }}</h3>
-                <el-tag v-for="line in selectedStation.lines" :key="line" size="small" effect="dark">
-                  {{ line }}
-                </el-tag>
-              </div>
-            </template>
-            
-            <el-descriptions :column="1" border>
-              <el-descriptions-item label="ID">{{ selectedStation.id }}</el-descriptions-item>
-              <el-descriptions-item label="出入口数量">{{ selectedStation.entrances }}</el-descriptions-item>
-              <el-descriptions-item label="周边单车数量">
-                <el-badge :value="bikesNearStation.length" type="primary">
-                  <span>共享单车</span>
-                </el-badge>
-              </el-descriptions-item>
-              <el-descriptions-item label="可用率">
-                {{ availableRate }}%
-              </el-descriptions-item>
-              <el-descriptions-item label="供需状态">
-                <el-tag :type="supplyStatusType">{{ supplyStatus }}</el-tag>
-              </el-descriptions-item>
-            </el-descriptions>
-            
-            <div class="action-buttons">
-              <el-button type="primary" @click="createDispatchPlan(selectedStation)" :disabled="!canCreatePlan">
-                创建调度方案
-              </el-button>
-            </div>
-          </el-card>
+    <div class="map-section">
+      <AMapComponent ref="mapRef" />
+    </div>
+    <div class="map-controls">
+      <el-button-group>
+        <el-tooltip content="显示/隐藏站点覆盖范围">
+          <el-button
+            :type="showCoverage ? 'primary' : 'default'"
+            @click="toggleCoverage"
+          >
+            <el-icon><Aim /></el-icon>
+          </el-button>
+        </el-tooltip>
+        <el-tooltip content="显示/隐藏所有站点">
+          <el-button
+            :type="showAllStations ? 'primary' : 'default'"
+            @click="toggleAllStations"
+          >
+            <el-icon><LocationInformation /></el-icon>
+          </el-button>
+        </el-tooltip>
+        <el-tooltip content="显示/隐藏共享单车">
+          <el-button
+            :type="showBikes ? 'primary' : 'default'"
+            @click="toggleBikes"
+          >
+            <el-icon><BicycleIcon /></el-icon>
+          </el-button>
+        </el-tooltip>
+      </el-button-group>
+    </div>
+    
+    <!-- 如果选中了站点，显示站点信息 -->
+    <el-card v-if="selectedStation" class="station-info-panel">
+      <template #header>
+        <div class="card-header">
+          <h3>{{ selectedStation.name }}</h3>
+          <el-tag v-for="line in selectedStation.lines" :key="line" size="small" effect="dark">
+            {{ line }}
+          </el-tag>
         </div>
-      </el-col>
+      </template>
       
-      <!-- 右侧：调度方案列表和表单 -->
-      <el-col :span="8">
-        <el-card class="dispatch-panel" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <h3>调度方案</h3>
-              <el-button type="success" size="small" @click="dialogVisible = true">
-                <el-icon><Plus /></el-icon> 新建方案
-              </el-button>
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="ID">{{ selectedStation.id }}</el-descriptions-item>
+        <el-descriptions-item label="出入口数量">{{ selectedStation.entrances }}</el-descriptions-item>
+        <el-descriptions-item label="周边单车数量">
+          <el-badge :value="bikesNearStation.length" type="primary">
+            <span>共享单车</span>
+          </el-badge>
+        </el-descriptions-item>
+        <el-descriptions-item label="可用率">
+          {{ availableRate }}%
+        </el-descriptions-item>
+        <el-descriptions-item label="供需状态">
+          <el-tag :type="supplyStatusType">{{ supplyStatus }}</el-tag>
+        </el-descriptions-item>
+      </el-descriptions>
+      
+      <div class="action-buttons">
+        <el-button type="primary" @click="createDispatchPlan(selectedStation)" :disabled="!canCreatePlan">
+          创建调度方案
+        </el-button>
+      </div>
+    </el-card>
+  </div>
+  
+  <!-- 右侧：调度方案列表和表单 -->
+  <el-col :span="8">
+    <el-card class="dispatch-panel" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <h3>调度方案</h3>
+          <el-button type="success" size="small" @click="dialogVisible = true">
+            <el-icon><Plus /></el-icon> 新建方案
+          </el-button>
+        </div>
+      </template>
+      
+      <el-empty v-if="!dispatchPlans.length" description="暂无调度方案" />
+      
+      <el-collapse v-else accordion>
+        <el-collapse-item
+          v-for="plan in dispatchPlans"
+          :key="plan.id"
+          :name="plan.id"
+          :title="plan.name"
+        >
+          <template #title>
+            <div class="plan-title">
+              {{ plan.name }}
+              <el-tag size="small" :type="getPlanStatusType(plan.status)">
+                {{ getPlanStatusText(plan.status) }}
+              </el-tag>
             </div>
           </template>
           
-          <el-empty v-if="!dispatchPlans.length" description="暂无调度方案" />
+          <el-descriptions :column="1" border size="small">
+            <el-descriptions-item label="起点站">{{ plan.source.name }}</el-descriptions-item>
+            <el-descriptions-item label="目标站">{{ plan.target.name }}</el-descriptions-item>
+            <el-descriptions-item label="调度单车数量">{{ plan.bikeCount }} 辆</el-descriptions-item>
+            <el-descriptions-item label="路径点数量">{{ plan.path.length }} 个点</el-descriptions-item>
+            <el-descriptions-item label="状态">
+              {{ getPlanStatusText(plan.status) }}
+            </el-descriptions-item>
+          </el-descriptions>
           
-          <el-collapse v-else accordion>
-            <el-collapse-item
-              v-for="plan in dispatchPlans"
-              :key="plan.id"
-              :name="plan.id"
-              :title="plan.name"
+          <div class="plan-actions">
+            <el-button 
+              type="primary" 
+              size="small"
+              :disabled="plan.status !== 'pending'" 
+              @click="executePlan(plan.id)"
             >
-              <template #title>
-                <div class="plan-title">
-                  {{ plan.name }}
-                  <el-tag size="small" :type="getPlanStatusType(plan.status)">
-                    {{ getPlanStatusText(plan.status) }}
-                  </el-tag>
-                </div>
-              </template>
-              
-              <el-descriptions :column="1" border size="small">
-                <el-descriptions-item label="起点站">{{ plan.source.name }}</el-descriptions-item>
-                <el-descriptions-item label="目标站">{{ plan.target.name }}</el-descriptions-item>
-                <el-descriptions-item label="调度单车数量">{{ plan.bikeCount }} 辆</el-descriptions-item>
-                <el-descriptions-item label="路径点数量">{{ plan.path.length }} 个点</el-descriptions-item>
-                <el-descriptions-item label="状态">
-                  {{ getPlanStatusText(plan.status) }}
-                </el-descriptions-item>
-              </el-descriptions>
-              
-              <div class="plan-actions">
-                <el-button 
-                  type="primary" 
-                  size="small"
-                  :disabled="plan.status !== 'pending'" 
-                  @click="executePlan(plan.id)"
-                >
-                  执行调度
-                </el-button>
-                <el-button 
-                  type="info" 
-                  size="small"
-                  @click="showPath(plan)"
-                >
-                  查看路径
-                </el-button>
-                <el-button 
-                  type="danger" 
-                  size="small"
-                  @click="deletePlan(plan.id)"
-                  :disabled="plan.status === 'executing'"
-                >
-                  删除
-                </el-button>
-              </div>
-            </el-collapse-item>
-          </el-collapse>
-        </el-card>
-      </el-col>
-    </el-row>
-    
-    <!-- 新建调度方案对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      title="新建调度方案"
-      width="500px"
+              执行调度
+            </el-button>
+            <el-button 
+              type="info" 
+              size="small"
+              @click="showPath(plan)"
+            >
+              查看路径
+            </el-button>
+            <el-button 
+              type="danger" 
+              size="small"
+              @click="deletePlan(plan.id)"
+              :disabled="plan.status === 'executing'"
+            >
+              删除
+            </el-button>
+          </div>
+        </el-collapse-item>
+      </el-collapse>
+    </el-card>
+  </el-col>
+  
+  <!-- 新建调度方案对话框 -->
+  <el-dialog
+    v-model="dialogVisible"
+    title="新建调度方案"
+    width="500px"
+  >
+    <el-form
+      ref="formRef"
+      :model="dispatchForm"
+      label-width="100px"
+      :rules="formRules"
     >
-      <el-form
-        ref="formRef"
-        :model="dispatchForm"
-        label-width="100px"
-        :rules="formRules"
-      >
-        <el-form-item label="起点站" prop="sourceStationId">
-          <el-select v-model="dispatchForm.sourceStationId" placeholder="选择起点站">
-            <el-option
-              v-for="station in stations"
-              :key="station.id"
-              :label="station.name"
-              :value="station.id"
-            />
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item label="目标站" prop="targetStationId">
-          <el-select v-model="dispatchForm.targetStationId" placeholder="选择目标站">
-            <el-option
-              v-for="station in targetStations"
-              :key="station.id"
-              :label="station.name"
-              :value="station.id"
-            />
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item label="调度数量" prop="bikeCount">
-          <el-input-number
-            v-model="dispatchForm.bikeCount"
-            :min="1"
-            :max="50"
-            :step="1"
+      <el-form-item label="起点站" prop="sourceStationId">
+        <el-select v-model="dispatchForm.sourceStationId" placeholder="选择起点站">
+          <el-option
+            v-for="station in stations"
+            :key="station.id"
+            :label="station.name"
+            :value="station.id"
           />
-        </el-form-item>
-      </el-form>
+        </el-select>
+      </el-form-item>
       
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitDispatchForm">提交</el-button>
-      </template>
-    </el-dialog>
-  </div>
+      <el-form-item label="目标站" prop="targetStationId">
+        <el-select v-model="dispatchForm.targetStationId" placeholder="选择目标站">
+          <el-option
+            v-for="station in targetStations"
+            :key="station.id"
+            :label="station.name"
+            :value="station.id"
+          />
+        </el-select>
+      </el-form-item>
+      
+      <el-form-item label="调度数量" prop="bikeCount">
+        <el-input-number
+          v-model="dispatchForm.bikeCount"
+          :min="1"
+          :max="50"
+          :step="1"
+        />
+      </el-form-item>
+    </el-form>
+    
+    <template #footer>
+      <el-button @click="dialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="submitDispatchForm">提交</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, h } from 'vue';
+import { ref, computed, reactive, onMounted, watch, h } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Aim, LocationInformation, Plus } from '@element-plus/icons-vue';
 import { useMapStore } from '../stores/mapStore';
-import BaiduMap from '../components/common/BaiduMap.vue';
+import AMapComponent from '../components/common/AMapComponent.vue';
 import type { Station } from '../stores/mapStore';
 import type { FormItemRule } from 'element-plus';
 
@@ -446,7 +439,7 @@ onMounted(async () => {
   height: 100%;
   padding: 20px;
   
-  .map-container {
+  .map-section {
     position: relative;
     height: calc(100vh - 120px);
     border-radius: 8px;

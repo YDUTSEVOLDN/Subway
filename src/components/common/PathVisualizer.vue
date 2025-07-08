@@ -85,8 +85,7 @@ const pathMarkers = ref<any[]>([]);
 // BMap声明
 declare global {
   interface Window {
-    BMap: any;
-    BMapGL: any;
+    AMap: any;
   }
 }
 
@@ -112,10 +111,11 @@ const getPathDistance = () => {
   const path = currentPath.value.path;
   
   for (let i = 1; i < path.length; i++) {
-    if (window.BMap) {
-      const p1 = new window.BMap.Point(path[i-1].lng, path[i-1].lat);
-      const p2 = new window.BMap.Point(path[i].lng, path[i].lat);
-      totalDistance += window.BMap.geometry ? window.BMap.geometry.getDistance(p1, p2) : 0;
+    if (window.AMap) {
+      // 使用高德地图的距离计算
+      const p1 = [path[i-1].lng, path[i-1].lat];
+      const p2 = [path[i].lng, path[i].lat];
+      totalDistance += window.AMap.GeometryUtil ? window.AMap.GeometryUtil.distance(p1, p2) : 0;
     } else {
       // 简化的距离计算（经纬度直接相减，不是实际距离）
       const dx = path[i].lng - path[i-1].lng;
@@ -163,12 +163,12 @@ const clearPath = () => {
   
   // 清除路径覆盖物
   pathOverlays.value.forEach(overlay => {
-    map.value.removeOverlay(overlay);
+    map.value.remove(overlay);
   });
   
   // 清除标记点
   pathMarkers.value.forEach(marker => {
-    map.value.removeOverlay(marker);
+    map.value.remove(marker);
   });
   
   pathOverlays.value = [];
@@ -183,62 +183,67 @@ const drawPath = () => {
   clearPath();
   
   try {
-    if (window.BMap) {
+    if (window.AMap) {
       const path = currentPath.value.path;
-      const points = path.map(p => new window.BMap.Point(p.lng, p.lat));
+      const points = path.map(p => new window.AMap.LngLat(p.lng, p.lat));
       
       // 创建折线覆盖物
-      const polyline = new window.BMap.Polyline(points, {
+      const polyline = new window.AMap.Polyline({
+        path: points,
         strokeColor: currentPath.value.color || '#409EFF',
         strokeWeight: 5,
         strokeOpacity: 0.8
       });
       
       // 添加路径到地图
-      map.value.addOverlay(polyline);
+      map.value.add(polyline);
       pathOverlays.value.push(polyline);
       
       // 添加起点和终点标记
-      const startIcon = new window.BMap.Icon(
-        '/start-icon.png', // 需要在public中添加此图标
-        new window.BMap.Size(32, 32),
-        { 
-          imageOffset: new window.BMap.Size(0, 0),
-          anchor: new window.BMap.Size(16, 32)
-        }
-      );
+      const startIcon = new window.AMap.Icon({
+        size: new window.AMap.Size(32, 32),
+        image: '/start-icon.png', // 需要在public中添加此图标
+        imageOffset: new window.AMap.Size(0, 0),
+        imageSize: new window.AMap.Size(32, 32),
+        anchor: new window.AMap.Size(16, 32)
+      });
       
-      const endIcon = new window.BMap.Icon(
-        '/end-icon.png', // 需要在public中添加此图标
-        new window.BMap.Size(32, 32),
-        { 
-          imageOffset: new window.BMap.Size(0, 0),
-          anchor: new window.BMap.Size(16, 32)
-        }
-      );
+      const endIcon = new window.AMap.Icon({
+        size: new window.AMap.Size(32, 32),
+        image: '/end-icon.png', // 需要在public中添加此图标
+        imageOffset: new window.AMap.Size(0, 0),
+        imageSize: new window.AMap.Size(32, 32),
+        anchor: new window.AMap.Size(16, 32)
+      });
       
       // 起点标记
-      const startMarker = new window.BMap.Marker(points[0], { icon: startIcon });
-      map.value.addOverlay(startMarker);
+      const startMarker = new window.AMap.Marker({
+        position: points[0],
+        icon: startIcon
+      });
+      map.value.add(startMarker);
       pathMarkers.value.push(startMarker);
       
       // 终点标记
-      const endMarker = new window.BMap.Marker(points[points.length - 1], { icon: endIcon });
-      map.value.addOverlay(endMarker);
+      const endMarker = new window.AMap.Marker({
+        position: points[points.length - 1],
+        icon: endIcon
+      });
+      map.value.add(endMarker);
       pathMarkers.value.push(endMarker);
       
       // 自动调整视野
       if (props.autoFit) {
-        map.value.setViewport(points);
+        map.value.setFitView(points);
       }
       
       // 添加点击事件
-      polyline.addEventListener('click', () => {
+      polyline.on('click', () => {
         showDetails.value = true;
         emit('path-click', currentPath.value);
       });
     } else {
-      console.log('BaiduMap API not available, cannot draw path');
+      console.log('AMap API not available, cannot draw path');
     }
   } catch (error) {
     console.error('绘制路径失败:', error);
