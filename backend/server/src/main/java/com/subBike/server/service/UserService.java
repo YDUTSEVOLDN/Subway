@@ -2,6 +2,7 @@ package com.subBike.server.service;
 
 import com.subBike.server.entity.User;
 import com.subBike.server.mapper.UserMapper;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,9 +29,8 @@ public class UserService implements IUserService{
         //mapper
     }
 
-    public User get(Integer UserId){
-        User searchUser=new User();
-        return searchUser;
+    public User get(String username){
+        return userMapper.findByUserName(username).orElseThrow(()->new EntityNotFoundException("没有指定用户"));
     }
 
 }

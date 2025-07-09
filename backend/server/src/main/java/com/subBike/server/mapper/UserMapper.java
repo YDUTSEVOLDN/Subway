@@ -10,7 +10,8 @@ import java.util.Optional;
 public interface UserMapper extends CrudRepository<User,Integer> {
     // 根据用户名查找用户
     Optional<User> findByUserName(String userName);
-
+    //根据ID查找用户
+    Optional<User> findByUserID(Integer userID);
     // 根据邮箱查找用户
     Optional<User> findByEmail(String email);
 

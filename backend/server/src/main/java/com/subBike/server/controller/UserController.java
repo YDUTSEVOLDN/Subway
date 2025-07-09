@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -60,21 +61,35 @@ public class UserController {
             @ApiResponse(responseCode = "500", description = "服务器内部错误")
     })
     public ResponseEntity<String> search(
-       @RequestBody
-       @Parameter(description = "用户ID" ,required = true)
-       Integer Userid){
+            @RequestParam("Username") String username,  // 对应 URL 中的 Username 参数
+            @RequestParam("password") String password ){
         try{
-            User checkUser=userService.get(Userid);
-            return ResponseEntity.ok("用户成功登录");
-        }catch(Exception e){
-
+            User usercopy=userService.get(username);
+            if(usercopy.getPassword().equals(password)) return ResponseEntity.ok("用户成功登录");
+            else return ResponseEntity.ok("用户名或密码错误，请重新输入");
+        }catch(EntityNotFoundException e){
+            return ResponseEntity.badRequest().body("请注册新用户");
         }
-        return null;
+        catch(Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
 
 //    //修改
-//    @PutMapping
+//    @GetMapping
+//    @Operation(summary = "修改用户信息",description = "修改用户信息")
+//    @ApiResponses(value = {
+//           @ApiResponse(responseCode = "200", description = "用户创建成功"),
+ //           @ApiResponse(responseCode = "400", description = "请求参数错误"),
+ //           @ApiResponse(responseCode = "500", description = "服务器内部错误")
+ //   })
+ //   public ResponseEntity<String> edit(
+  //          @RequestBody
+    //        @Parameter(description="修改信息",required=true)
+
+
+   // )
 //    //删除
-//    @DeleteMapping
+//   @DeleteMapping
 }

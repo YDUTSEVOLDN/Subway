@@ -11,5 +11,5 @@ public interface IUserService {
      */
     void add(UserDto user) throws RuntimeException;
 
-    User get(Integer id);
+    User get(String username);
 }
