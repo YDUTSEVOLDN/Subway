@@ -1,0 +1,23 @@
+spring:
+  docker:
+    compose:
+      enabled: false
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost/subBike?setUnicode=true&characterEncoding=utf8&useAffectedRows=true
+    username: root
+    password: Jnh@9372
+
+mybatis:
+  type-aliases-package: com.subBike.server.entity
+  mapper-locations: classpath:mapper/*.xml
+
+server:
+  port: 10086
