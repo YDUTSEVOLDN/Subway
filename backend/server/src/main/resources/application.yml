@@ -1,4 +1,18 @@
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  springdoc:
+    api-docs:
+      path: /v3/api-docs
+    swagger-ui:
+      path: /swagger-ui.html
+      tags-sorter: alpha
+      operations-sorter: alpha
+    packages-to-scan: com.example.controller
+    paths-to-match: /api/**
+
   docker:
     compose:
       enabled: false
@@ -14,6 +28,19 @@ spring:
     url: jdbc:mysql://localhost/subBike?setUnicode=true&characterEncoding=utf8&useAffectedRows=true
     username: root
     password: Jnh@9372
+
+  devtools:
+    restart:
+      enabled: true                    # 启用自动重启
+      additional-paths: src/main/java  # 监控的路径
+      exclude: static/**,public/**     # 排除不需要重启的路径
+    livereload:
+      enabled: true                    # 启用LiveReload
+      port: 35729                      # LiveReload端口
+  freemarker:
+    cache: false                       # 禁用模板缓存
+  thymeleaf:
+    cache: false                       # 禁用Thymeleaf缓存
 
 mybatis:
   type-aliases-package: com.subBike.server.entity
