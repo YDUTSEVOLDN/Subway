@@ -10,11 +10,38 @@ public class AmountDto {
     private String station;
 
     @Schema(description = "进人数", example = "123456", required = true)
-    private Integer inNum;
+    private Long inNum;
 
     @Schema(description = "出人数", example = "123", required = true)
-    private Integer outNum;
-    @Schema(description = "总人数", example = "123579", required = true)
-    private Integer total;
+    private Long outNum;
 
+    public AmountDto(String station, Long inNum, Long outNum) {
+        this.station = station;
+        this.inNum = inNum;
+        this.outNum = outNum;
+    }
+
+    public Long getInNum() {
+        return inNum;
+    }
+
+    public String getStation() {
+        return station;
+    }
+
+    public Long getOutNum() {
+        return outNum;
+    }
+
+    public void setInNum(Long inNum) {
+        this.inNum = inNum;
+    }
+
+    public void setOutNum(Long outNum) {
+        this.outNum = outNum;
+    }
+
+    public void setStation(String station) {
+        this.station = station;
+    }
 }
