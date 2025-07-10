@@ -14,6 +14,11 @@ public class UserDto {
     @Schema(description = "邮箱", example = "zhangsan@example.com", required = true)
     private String email;
 
+    UserDto(String name,String password,String email){
+        userName=name;
+        this.password=password;
+        this.email=email;
+    }
     // getter和setter方法保持不变
     public String getUserName() {
         return userName;

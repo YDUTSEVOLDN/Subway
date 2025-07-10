@@ -10,6 +10,15 @@ public interface IUserService {
      * @throws RuntimeException 当用户名或邮箱已存在时抛出异常
      */
     void add(UserDto user) throws RuntimeException;
+    User get(String username);//获取用户信息
+    boolean exsitByName(String username);//查找是否存在用户
+    void edit(UserDto old_user,UserDto new_user);//修改用户信息
+    void delete(UserDto user);//删除用户信息
 
-    User get(String username);
+
+    public User getUserByUsername(String username) ;
+    User authenticate(String username, String rawPassword);
+
+
+
 }

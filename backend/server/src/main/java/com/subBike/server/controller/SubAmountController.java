@@ -79,7 +79,7 @@ public class SubAmountController {
             }
 
 
-            return ResponseEntity.ok(sublist);
+            return ResponseEntity.ok(list);
         }
 
         catch(Exception e){

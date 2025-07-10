@@ -29,6 +29,10 @@ spring:
     username: root
     password: Jnh@9372
 
+  server:
+    address: 0.0.0.0  # 绑定所有网络接口，允许外部访问
+    port: 10086       # 确保端口与你的应用一致（如果之前配置过端口，保持不变）
+
   devtools:
     restart:
       enabled: true                    # 启用自动重启
@@ -41,6 +45,7 @@ spring:
     cache: false                       # 禁用模板缓存
   thymeleaf:
     cache: false                       # 禁用Thymeleaf缓存
+
 
 mybatis:
   type-aliases-package: com.subBike.server.entity
