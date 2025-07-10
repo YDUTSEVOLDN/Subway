@@ -1,9 +1,18 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import type { RouteRecordRaw } from 'vue-router';
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
+import { ElMessageBox } from 'element-plus';
 import Dashboard from '../views/Dashboard.vue';
 import Login from '../views/Login.vue';
 
 const routes: Array<RouteRecordRaw> = [
+  {
+    path: '/identity',
+    name: 'identity',
+    component: () => import('../views/Identity.vue'),
+    meta: {
+      title: '身份管理',
+      requiresAdmin: true
+    }
+  },
   {
     path: '/login',
     name: 'login',
@@ -26,7 +35,9 @@ const routes: Array<RouteRecordRaw> = [
     name: 'data-analysis',
     component: () => import('../views/DataAnalysis.vue'),
     meta: {
-      title: '数据分析'
+      title: '数据分析',
+      requiresAuth: true,
+      allowedRoles: ['manager','subway','admin']
     }
   },
   {
@@ -34,7 +45,9 @@ const routes: Array<RouteRecordRaw> = [
     name: 'dispatch',
     component: () => import('../views/Dispatch.vue'),
     meta: {
-      title: '调度管理'
+      title: '调度管理',
+      requiresAuth: true,
+      allowedRoles: ['manager','subway','admin']
     }
   },
   {
@@ -42,7 +55,9 @@ const routes: Array<RouteRecordRaw> = [
     name: 'path-planner',
     component: () => import('../views/PathPlanner.vue'),
     meta: {
-      title: '路径规划'
+      title: '路径规划',
+      requiresAuth: true,
+      allowedRoles: ['manager','subway','admin']
     }
   },
   {
@@ -50,9 +65,11 @@ const routes: Array<RouteRecordRaw> = [
     name: 'settings',
     component: () => import('../views/SystemSettings.vue'),
     meta: {
-      title: '系统设置'
+      title: '系统设置',
+      requiresAdmin: true
     }
-  }
+  },
+  {    path: '/profile',    name: 'profile',    component: () => import('../views/Profile.vue'),    meta: {      title: '个人中心'    }  }
 ];
 
 const router = createRouter({
@@ -61,20 +78,31 @@ const router = createRouter({
 });
 
 // 路由守卫，检查用户是否登录
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // 设置页面标题
   document.title = `${to.meta.title || '智慧交通'} - 监控与调度平台`;
   
   // 检查页面是否需要登录验证
   const isPublicPage = to.meta.public;
   const isLoggedIn = localStorage.getItem('token');
-  
+  const requiresAdmin = to.meta.requiresAdmin;
+  const userStore = (await import('../stores/userStore')).useUserStore();
+
   if (!isPublicPage && !isLoggedIn) {
-    // 如果页面需要登录但用户未登录，重定向到登录页
     next({ name: 'login', query: { redirect: to.fullPath } });
+  } else if (to.meta.allowedRoles) {
+    const hasRole = (to.meta.allowedRoles as string[]).includes(userStore.userRole);
+    if (!hasRole) {
+      ElMessageBox.alert('当前功能暂未向普通用户开放','权限不足');
+      return false;
+    }
+  }
+  
+  if (requiresAdmin && !userStore.isAdmin) {
+    next({ name: 'dashboard' });
   } else {
     next();
   }
 });
 
-export default router; 
+export default router;

@@ -31,33 +31,13 @@
       </el-menu-item>
       
       <!-- 管理员和共享单车管理者可见的菜单 -->
-      <el-menu-item index="/dispatch" v-if="userStore.isBikeManager || userStore.isAdmin">
+      <el-menu-item index="/dispatch" v-if="userStore.isBikeManager">
         <el-icon><Van /></el-icon>
         <template #title>调度管理</template>
       </el-menu-item>
       
-      <!-- 管理员专属菜单 -->
-      <el-sub-menu index="/admin" v-if="userStore.isAdmin">
-        <template #title>
-          <el-icon><Management /></el-icon>
-          <span>系统管理</span>
-        </template>
-        <el-menu-item index="/admin/users">
-          <el-icon><User /></el-icon>
-          <span>用户管理</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/bikes">
-          <el-icon><Bicycle /></el-icon>
-          <span>单车管理</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/stations">
-          <el-icon><LocationInformation /></el-icon>
-          <span>站点管理</span>
-        </el-menu-item>
-      </el-sub-menu>
-      
-      <!-- 系统设置菜单 -->
-      <el-menu-item index="/settings">
+      <!-- 系统设置菜单 (管理员和普通用户不可见) -->
+      <el-menu-item index="/settings" v-if="!userStore.isAdmin && !userStore.isRegularUser">
         <el-icon><Setting /></el-icon>
         <template #title>系统设置</template>
       </el-menu-item>

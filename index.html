@@ -9,20 +9,7 @@
     <!-- 从本地存储加载高德地图API密钥 -->
     <script>
       window.loadAMapAPI = function() {
-        // 尝试从本地存储获取API密钥
-        var savedSettings = localStorage.getItem('mapSettings');
-        var apiKey = 'e5c2b4f4a4b1d3a1f4b2c3d5e1a2b3c4'; // 默认密钥
-        
-        if (savedSettings) {
-          try {
-            var settings = JSON.parse(savedSettings);
-            if (settings.apiKey) {
-              apiKey = settings.apiKey;
-            }
-          } catch (e) {
-            console.error('解析地图设置失败:', e);
-          }
-        }
+        var apiKey = '47c701bf0774428f904221ceed78d042'; // 使用您提供的高德地图API密钥
         
         // 动态加载高德地图API，加载更多插件和元素
         var script = document.createElement('script');
@@ -41,7 +28,7 @@
       };
       
       // 页面加载完成后加载地图API
-      window.addEventListener('load', window.loadAMapAPI);
+      window.loadAMapAPI();
     </script>
   </head>
   <body>

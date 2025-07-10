@@ -10,6 +10,7 @@ declare module 'vue' {
     AMapComponent: typeof import('./src/components/common/AMapComponent.vue')['default']
     AppHeader: typeof import('./src/components/layout/AppHeader.vue')['default']
     BaiduMap: typeof import('./src/components/common/BaiduMap.vue')['default']
+    ComparisonChart: typeof import('./src/components/analysis/ComparisonChart.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAside: typeof import('element-plus/es')['ElAside']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
@@ -54,6 +55,8 @@ declare module 'vue' {
     ElSlider: typeof import('element-plus/es')['ElSlider']
     ElSubMenu: typeof import('element-plus/es')['ElSubMenu']
     ElSwitch: typeof import('element-plus/es')['ElSwitch']
+    ElTable: typeof import('element-plus/es')['ElTable']
+    ElTableColumn: typeof import('element-plus/es')['ElTableColumn']
     ElTabPane: typeof import('element-plus/es')['ElTabPane']
     ElTabs: typeof import('element-plus/es')['ElTabs']
     ElTag: typeof import('element-plus/es')['ElTag']
@@ -62,11 +65,18 @@ declare module 'vue' {
     ElTimePicker: typeof import('element-plus/es')['ElTimePicker']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     HeatMapChart: typeof import('./src/components/charts/HeatMapChart.vue')['default']
+    NavigationPanel: typeof import('./src/components/common/NavigationPanel.vue')['default']
     PathVisualizer: typeof import('./src/components/common/PathVisualizer.vue')['default']
+    RankingChart: typeof import('./src/components/analysis/RankingChart.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Sidebar: typeof import('./src/components/layout/Sidebar.vue')['default']
+    SubwayLegend: typeof import('./src/components/common/SubwayLegend.vue')['default']
     TimeSimulator: typeof import('./src/components/common/TimeSimulator.vue')['default']
     TrafficChart: typeof import('./src/components/charts/TrafficChart.vue')['default']
+    TrendChart: typeof import('./src/components/analysis/TrendChart.vue')['default']
+  }
+  export interface ComponentCustomProperties {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
   }
 }

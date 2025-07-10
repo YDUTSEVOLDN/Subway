@@ -187,7 +187,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { Position, Refresh, Delete } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import AMapComponent from '../components/common/AMapComponent.vue';
@@ -230,6 +230,15 @@ interface PathData {
 const currentPath = ref<PathData | null>(null);
 const savedPaths = ref<PathData[]>([]);
 
+// 监视mapStore中的地图实例
+watch(() => mapStore.mapInstance, (newMapInstance) => {
+  if (newMapInstance) {
+    mapInstance.value = newMapInstance;
+    console.log('从Store获取到地图实例:', mapInstance.value);
+  }
+}, { immediate: true });
+
+
 // 保存对话框
 const saveDialogVisible = ref(false);
 const saving = ref(false);
@@ -248,44 +257,33 @@ const availableTargetStations = computed(() => {
 });
 
 const pathDistance = computed(() => {
-  if (!currentPath.value?.path || currentPath.value.path.length < 2) return '0.00';
-  
-  let totalDistance = 0;
-  const path = currentPath.value.path;
-  
-  for (let i = 1; i < path.length; i++) {
-    // 使用百度地图API计算路径距离
-    if (window.BMap && window.BMap.geometry) {
-      const p1 = new window.BMap.Point(path[i-1].lng, path[i-1].lat);
-      const p2 = new window.BMap.Point(path[i].lng, path[i].lat);
-      totalDistance += window.BMap.geometry.getDistance(p1, p2);
-    } else {
-      // 简化的距离计算（经纬度直接相减，不是实际距离）
-      const dx = path[i].lng - path[i-1].lng;
-      const dy = path[i].lat - path[i-1].lat;
-      totalDistance += Math.sqrt(dx * dx + dy * dy) * 111.12; // 大约转换为km
-    }
+  if (!currentPath.value || !currentPath.value.path || currentPath.value.path.length < 2) {
+    return '0';
   }
-  
-  return (totalDistance / 1000).toFixed(2);
+  let distance = 0;
+  for (let i = 0; i < currentPath.value.path.length - 1; i++) {
+    const p1 = currentPath.value.path[i];
+    const p2 = currentPath.value.path[i+1];
+    distance += getDistance(p1.lat, p1.lng, p2.lat, p2.lng);
+  }
+  return distance.toFixed(2);
 });
 
 const pathDuration = computed(() => {
+  if (!currentPath.value || !currentPath.value.path) return 0;
   const distance = parseFloat(pathDistance.value);
-  // 假设平均速度为 20 km/h
-  const hours = distance / 20;
-  return Math.ceil(hours * 60);
+  // 假设平均骑行速度为 15 km/h
+  const speed = 15;
+  const timeHours = distance / speed;
+  return Math.round(timeHours * 60);
 });
 
 // 方法
 const loadStations = async () => {
-  try {
-    await mapStore.loadStations();
-    stations.value = mapStore.getStations;
-  } catch (error) {
-    console.error('加载站点数据失败:', error);
-    ElMessage.error('加载站点数据失败');
+  if (mapStore.stations.length === 0) {
+    await mapStore.loadSubwayData();
   }
+  stations.value = mapStore.stations;
 };
 
 const planPath = async () => {
@@ -427,47 +425,24 @@ const disablePastDate = (date: Date) => {
   return date < new Date();
 };
 
-// 监听地图实例变化
-watch(() => {
-  if (aMapComponent.value) {
-    return (aMapComponent.value as any).mapInstance;
-  }
-  return null;
-}, (newVal) => {
-  if (newVal) {
-    mapInstance.value = newVal;
-  }
-});
-
 // 组件挂载
 onMounted(async () => {
-  console.log('PathPlanner组件挂载');
-  
-  // 加载站点数据
   await loadStations();
-  console.log('站点数据加载完成:', stations.value);
   
-  // 确保地图组件初始化
-  console.log('地图组件引用:', aMapComponent.value);
+  const mapRef = aMapComponent.value;
+  if (mapRef) {
+    mapInstance.value = mapRef.getMap();
+  }
   
-  // 设置一个延迟，确保DOM完全渲染
-  setTimeout(() => {
-    if (aMapComponent.value) {
-      console.log('地图组件实例获取成功');
-      // 地图实例会通过watch监听器自动设置
-    } else {
-      console.warn('地图组件实例获取失败');
-    }
-  }, 500);
-  
-  // 尝试从本地存储加载保存的路径
-  const savedPathsStr = localStorage.getItem('savedPaths');
-  if (savedPathsStr) {
-    try {
-      savedPaths.value = JSON.parse(savedPathsStr);
-      console.log('从本地存储加载的路径:', savedPaths.value.length);
-    } catch (e) {
-      console.error('解析保存的路径失败:', e);
+  // 检查是否有来自调度页面的预设路径
+  if (mapStore.dispatchPlans.length > 0) {
+    const plan = mapStore.dispatchPlans[0];
+    if (plan.source && plan.target) {
+      await nextTick();
+      sourceStation.value = plan.source.id;
+      targetStation.value = plan.target.id;
+      pathForm.value.bikeCount = plan.bikeCount;
+      await planPath();
     }
   }
 });
@@ -477,72 +452,67 @@ onUnmounted(() => {
   // 保存路径到本地存储
   localStorage.setItem('savedPaths', JSON.stringify(savedPaths.value));
 });
+
+// Helper function to calculate distance between two points (Haversine formula)
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2-lat1);
+  const dLon = deg2rad(lon2-lon1);
+  const a =
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+    ;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distance in km
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI/180)
+}
 </script>
 
-<style scoped lang="scss">
+<style scoped>
 .path-planner-container {
   padding: 20px;
-  
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    
-    h2 {
-      margin: 0;
-      font-size: 1.5rem;
-    }
-    
-    .actions {
-      display: flex;
-      gap: 10px;
-    }
-  }
-  
-  .form-card {
-    margin-bottom: 20px;
-  }
-  
-  .map-card {
-    height: 700px;
-    
-    .map-container {
-      height: 100%;
-      position: relative;
-      
-      .map {
-        height: 100%;
-      }
-    }
-  }
-  
-  .saved-paths-card {
-    .saved-path-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-      cursor: pointer;
-      
-      &:hover {
-        background-color: #f5f7fa;
-      }
-      
-      .path-info {
-        flex: 1;
-        
-        .path-name {
-          font-weight: bold;
-          margin-bottom: 5px;
-        }
-        
-        .path-stations {
-          font-size: 12px;
-          color: #606266;
-        }
-      }
-    }
-  }
+}
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.map-card {
+  height: 100%;
+}
+.map-container {
+  width: 100%;
+  height: 75vh; /* 强制设置一个明确的高度 */
+  position: relative;
+}
+.map {
+  width: 100%;
+  height: 100%;
+}
+.form-card, .saved-paths-card {
+  margin-bottom: 20px;
+}
+.saved-path-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+}
+.saved-path-item:hover {
+  background-color: #f5f7fa;
+}
+.path-info .path-name {
+  font-weight: bold;
+}
+.path-info .path-stations {
+  font-size: 12px;
+  color: #909399;
 }
 </style> 

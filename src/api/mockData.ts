@@ -52,6 +52,41 @@ export const mockStations = [
     },
     entrances: 3,
     lines: ['1号线', '10号线'],
+  },
+  {
+    id: 6,
+    name: '海淀黄庄站',
+    position: { lng: 116.32, lat: 39.98 },
+    entrances: 4,
+    lines: ['4号线', '10号线'],
+  },
+  {
+    id: 7,
+    name: '望京西站',
+    position: { lng: 116.45, lat: 39.99 },
+    entrances: 3,
+    lines: ['13号线', '15号线'],
+  },
+  {
+    id: 8,
+    name: '宋家庄站',
+    position: { lng: 116.43, lat: 39.86 },
+    entrances: 5,
+    lines: ['5号线', '10号线', '亦庄线'],
+  },
+  {
+    id: 9,
+    name: '军事博物馆站',
+    position: { lng: 116.33, lat: 39.90 },
+    entrances: 2,
+    lines: ['1号线', '9号线'],
+  },
+  {
+    id: 10,
+    name: '知春路站',
+    position: { lng: 116.33, lat: 39.97 },
+    entrances: 3,
+    lines: ['10号线', '13号线'],
   }
 ];
 
@@ -265,7 +300,59 @@ export const generateDispatchRoute = (sourceId: number, destinationId: number) =
   };
 };
 
-// 模拟API请求，返回Promise
+export const generateStationRanking = (metric: string, limit: number) => {
+  return mockStations
+    .map(station => ({
+      stationId: station.id,
+      stationName: station.name,
+      value: Math.floor(Math.random() * 5000) + 1000 // 随机生成 1000-6000 的客流量
+    }))
+    .sort((a, b) => b.value - a.value) // 降序排序
+    .slice(0, limit);
+};
+
+export const generateSystemTrend = (granularity: string, range: string) => {
+  let labels: string[];
+  let dataPoints: number;
+
+  if (range === 'last7days') {
+    labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    dataPoints = 7;
+  } else if (range === 'last30days') {
+    labels = Array.from({ length: 30 }, (_, i) => `D${i + 1}`);
+    dataPoints = 30;
+  } else { // last24hours
+    labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+    dataPoints = 24;
+  }
+
+  const generateSeriesData = () => Array.from({ length: dataPoints }, () => Math.floor(Math.random() * 15000) + 5000);
+
+  return {
+    labels,
+    series: [
+      { name: '进站', data: generateSeriesData() },
+      { name: '出站', data: generateSeriesData() }
+    ]
+  };
+};
+
+export const generateStationComparison = (stationIds: string[], metric: string, range: string) => {
+  const labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  const series = stationIds.map(id => {
+    const station = mockStations.find(s => s.id === parseInt(id));
+    return {
+      stationName: station ? station.name : `站点 ${id}`,
+      data: Array.from({ length: 7 }, () => Math.floor(Math.random() * 8000) + 1000)
+    };
+  });
+  return { labels, series };
+};
+
+
+/**
+ * 模拟API请求的通用函数
+ */
 export const mockApiRequest = <T>(data: T, delay: number = 500): Promise<T> => {
   return new Promise((resolve) => {
     setTimeout(() => {
