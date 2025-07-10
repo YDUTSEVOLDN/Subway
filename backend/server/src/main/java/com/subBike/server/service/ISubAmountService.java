@@ -1,8 +1,11 @@
 package com.subBike.server.service;
 
 import java.util.Date;
-import java.util.Map;
+import java.util.List;
+import com.subBike.server.entity.SubAmount;
+import com.subBike.server.entity.dto.AmountDto;
+import com.subBike.server.entity.id.SubAmountID;
 
 public interface ISubAmountService {
-//    Map<String,Integer>[] getStationPopulation(Date date,String Request);
+      public List<AmountDto> findByDate(Date date);
 }

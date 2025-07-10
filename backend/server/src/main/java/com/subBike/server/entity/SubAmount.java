@@ -8,19 +8,44 @@ import java.sql.Date;
 @IdClass(SubAmountID.class)
 @Entity
 public class SubAmount {
-    // 联合主键（使用@EmbeddedId）
-    @EmbeddedId
-    private SubAmountID id;
-    Integer inNum;
-    Integer outNum;
+    @Id
+    private Date date;
+    @Id
+    private String station;
+    @Id
+    private Integer time;
+    private Integer inNum;
+    private Integer outNum;
 
-    public SubAmountID getId() {
-        return id;
+    public Date getDate() {
+        return date;
     }
 
-    public void setId(SubAmountID id) {
-        this.id = id;
+    public void setDate(Date date) {
+        this.date = date;
     }
+
+    public String getStation() {
+        return station;
+    }
+
+    public void setStation(String station) {
+        this.station = station;
+    }
+
+    public Integer getTime() {
+        return time;
+    }
+
+    public void setTime(Integer time) {
+        this.time = time;
+    }
+
+
+
+
+
+
 
     public Integer getInNum() {
         return inNum;
@@ -38,4 +63,5 @@ public class SubAmount {
         this.outNum = outNum;
     }
 
+    public SubAmount() {}
 }

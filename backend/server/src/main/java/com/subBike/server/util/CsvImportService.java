@@ -85,7 +85,7 @@ public class CsvImportService {
                 id.setTime(Integer.parseInt(line[1])); // 第二列：hour（转为Integer）
 
                 // 设置其他字段
-                subAmount.setId(id); // 如果实体类中用了@EmbeddedId，需要这一步
+//                subAmount.setId(id); // 如果实体类中用了@EmbeddedId，需要这一步
                 subAmount.setInNum(Integer.parseInt(line[2])); // 第三列：in_count
                 subAmount.setOutNum(Integer.parseInt(line[3])); // 第四列：out_count
 
