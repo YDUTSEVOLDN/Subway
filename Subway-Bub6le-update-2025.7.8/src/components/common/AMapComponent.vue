@@ -35,9 +35,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch, defineExpose } from 'vue';
 import { useMapStore } from '../../stores/mapStore';
 import { Loading, Place, Monitor, Search } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 
 declare global {
   interface Window {
@@ -53,6 +54,9 @@ const mapInstance = ref<any>(null);
 const mapMarkers = ref<any[]>([]);
 const coverageCircle = ref<any | null>(null);
 const bikeMarkers = ref<any[]>([]);
+const heatmapInstance = ref<any | null>(null);
+const subwayLinesOverlay = ref<any[]>([]); // 用于存储地铁线路的 Polyline
+const stationLabels = ref<any[]>([]); // 用于存储站点名称标签
 
 const mapStore = useMapStore();
 
@@ -65,14 +69,44 @@ let satelliteLayer = null as any;
 const searchKeyword = ref('');
 let placeSearch: any = null;
 
+// 搜索POI
+const searchPOI = () => {
+  if (!searchKeyword.value || !mapInstance.value) return;
+
+  const keyword = searchKeyword.value.trim();
+  const station = mapStore.findStationByName(keyword);
+
+  if (station) {
+    // 找到了地铁站，直接触发其marker的点击事件
+    const marker = mapMarkers.value.find(m => m.getTitle() === station.name);
+    if (marker) {
+      marker.emit('click');
+      // 点击后，再确保缩放级别是我们想要的
+      mapInstance.value.setZoom(17);
+    } else {
+      // 备用方案
+      mapInstance.value.setZoomAndCenter(17, [station.position.lng, station.position.lat]);
+      ElMessage.info(`已定位到 "${keyword}"`);
+    }
+  } else {
+    // 未找到，给出提示
+    ElMessage.warning(`未找到名为 "${keyword}" 的地铁站`);
+  }
+};
+
 // 初始化地图
-const initMap = () => {
+const initMap = async () => {
   if (!mapContainer.value) {
     console.error('地图容器元素不存在');
     return;
   }
   
   try {
+    // 确保在初始化地图前，站点及相关数据已加载
+    if (mapStore.getStations.length === 0) {
+      await mapStore.loadSubwayData();
+    }
+
     console.log('开始初始化高德地图...');
     console.log('window.AMap是否存在:', !!window.AMap);
     
@@ -92,9 +126,10 @@ const initMap = () => {
       // 创建地图实例
       const map = new window.AMap.Map(mapContainer.value, {
         center: mapCenter, // 使用站点位置或默认位置
-        zoom: 15, // 增加缩放级别
+        zoom: 12, // 调整缩放级别以适应整体视图
         viewMode: '3D',
-        mapStyle: 'amap://styles/normal', // 使用标准地图样式
+        mapStyle: 'amap://styles/blank', // 使用空白地图样式，最大限度简化背景
+        features: ['bg', 'point'], // 仅显示背景和兴趣点，隐藏道路等元素
         resizeEnable: true,
         rotateEnable: true,
         pitchEnable: true,
@@ -104,7 +139,7 @@ const initMap = () => {
       });
       
       // 添加控件
-      map.plugin(['AMap.ToolBar', 'AMap.Scale', 'AMap.MapType', 'AMap.Geolocation', 'AMap.Traffic'], () => {
+      map.plugin(['AMap.ToolBar', 'AMap.Scale', 'AMap.MapType', 'AMap.Geolocation', 'AMap.Traffic', 'AMap.HeatMap'], () => {
         // 工具条控件
         map.addControl(new window.AMap.ToolBar({
           position: 'RB'
@@ -135,6 +170,11 @@ const initMap = () => {
         mapStore.trafficLayer = trafficLayer;
       });
       
+      // 监听地图缩放结束事件，以便重新绘制线路
+      map.on('zoomend', () => {
+        // 缩放不再需要重绘，Polyline能自动处理
+      });
+
       // 加载地图完成后
       map.on('complete', () => {
         console.log('高德地图加载完成');
@@ -152,8 +192,10 @@ const initMap = () => {
           heightFactor: 2 // 楼块高度系数
         });
         
-        // 添加站点标记
+        // 添加站点标记和地铁线路
         addStationMarkers();
+        drawSubwayLines(); // 绘制地铁线路
+        drawHeatmap(); // 绘制热力图
       });
       
       console.log('地图实例创建成功');
@@ -167,9 +209,11 @@ const initMap = () => {
       // 添加地图加载完成事件监听
       map.on('complete', () => {
         console.log('地图加载完成事件触发');
-        // 再次添加站点标记，确保站点显示
+        // 再次添加站点标记和线路，确保显示
         setTimeout(() => {
           addStationMarkers();
+          drawSubwayLines(); // 绘制地铁线路
+          drawHeatmap(); // 绘制热力图
         }, 500);
       });
     } else {
@@ -230,6 +274,21 @@ const useMockMap = () => {
   }, 500);
 };
 
+const clearStationLabels = () => {
+  if (mapInstance.value && stationLabels.value.length > 0) {
+    mapInstance.value.remove(stationLabels.value);
+    stationLabels.value = [];
+  }
+};
+
+const clearMarkers = () => {
+  if (mapInstance.value && mapMarkers.value.length > 0) {
+    mapInstance.value.remove(mapMarkers.value);
+    mapMarkers.value = [];
+  }
+  clearStationLabels();
+};
+
 // 添加地铁站点标记
 const addStationMarkers = () => {
   if (!mapInstance.value) return;
@@ -285,19 +344,42 @@ const addStationMarkers = () => {
   // 创建新标记
   stations.forEach((station) => {
     try {
-      let marker: any = null;
-      
       if (window.AMap) {
-        // 使用更简单的标记方式，不使用自定义图标
-        console.log(`添加站点: ${station.name}, 位置: [${station.position.lng}, ${station.position.lat}]`);
-        
-        marker = new window.AMap.Marker({
+        const isInterchange = station.lines.length > 1;
+        let markerContent, markerOffset;
+
+        if (isInterchange) {
+          // 换乘站样式: 白色圆环
+          markerContent = `
+            <div style="
+              width: 14px;
+              height: 14px;
+              background-color: #ffffff;
+              border: 2px solid #555555;
+              border-radius: 50%;
+              box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            "></div>
+          `;
+          markerOffset = new window.AMap.Pixel(-9, -9);
+        } else {
+          // 普通站样式: 黑色实心圆点
+          markerContent = `
+            <div style="
+              width: 8px;
+              height: 8px;
+              background-color: #333333;
+              border-radius: 50%;
+            "></div>
+          `;
+          markerOffset = new window.AMap.Pixel(-4, -4);
+        }
+
+        const marker = new window.AMap.Marker({
           position: [station.position.lng, station.position.lat],
           title: station.name,
-          label: {
-            content: station.name,
-            direction: 'bottom'
-          }
+          content: markerContent,
+          offset: markerOffset,
+          zIndex: 60 // 确保站点标记在线路之上
         });
         
         // 添加信息窗口
@@ -306,28 +388,146 @@ const addStationMarkers = () => {
             <div class="station-info">
               <h4>${station.name}</h4>
               <p>线路: ${station.lines.join('、')}</p>
-              <p>出入口数量: ${station.entrances}</p>
             </div>
           `,
-          offset: new window.AMap.Pixel(0, -32)
+          offset: new window.AMap.Pixel(0, -32),
+          autoMove: false // 关键：禁用信息窗口的自动平移，防止与我们的定位代码冲突
         });
         
+        // 将 infoWindow 实例附加到 marker 上，方便从外部访问
+        marker.infoWindow = infoWindow;
+        
+        // 点击 marker 时，居中、选中站点、打开窗口
         marker.on('click', () => {
-          mapStore.selectStation(station);
           mapInstance.value.setCenter([station.position.lng, station.position.lat]);
-          infoWindow.open(mapInstance.value, marker.getPosition());
+          mapStore.selectStation(station);
+          marker.infoWindow.open(mapInstance.value, marker.getPosition());
         });
         
         mapInstance.value.add(marker);
         mapMarkers.value.push(marker);
+
+        // 为站点名称创建文本标签
+        const textLabel = new window.AMap.Text({
+          text: station.name,
+          position: [station.position.lng, station.position.lat],
+          offset: new window.AMap.Pixel(15, -6), // 调整文本位置，使其在标记右侧偏上
+          style: {
+            'background-color': 'transparent',
+            'text-align': 'left',
+            'font-size': '12px',
+            'font-weight': '500',
+            'color': '#2f2f2f',
+            'border': 'none',
+            'text-shadow': '1px 0 0 #fff, -1px 0 0 #fff, 0 1px 0 #fff, 0 -1px 0 #fff' // 白色描边，提升可读性
+          },
+          zIndex: 61,
+          zooms: [14, 20] // 设置文本仅在缩放级别 14 到 20 显示
+        });
+
+        mapInstance.value.add(textLabel);
+        stationLabels.value.push(textLabel);
+
       } else {
-        // 模拟模式下的简化处理
+        // 模拟模式
         console.log(`添加站点标记: ${station.name}`);
       }
     } catch (error) {
       console.error('添加站点标记失败:', error);
     }
   });
+};
+
+// 清除所有地铁线路
+const clearSubwayLines = () => {
+  if (mapInstance.value && subwayLinesOverlay.value.length > 0) {
+    mapInstance.value.remove(subwayLinesOverlay.value);
+    subwayLinesOverlay.value = [];
+  }
+};
+
+// 绘制地铁线路 - 使用 Polyline 实现平滑曲线和描边效果
+const drawSubwayLines = () => {
+  if (!mapInstance.value || !window.AMap) return;
+
+  clearSubwayLines(); // 绘制前先清除旧的线路
+
+  const lines = mapStore.subwayLines;
+  if (!lines || lines.length === 0) return;
+
+  const hasHighlights = mapStore.highlightedLines.size > 0;
+
+  lines.forEach(line => {
+    if (line.path.length < 2) return;
+
+    const isHighlighted = mapStore.highlightedLines.has(line.name);
+    let strokeWeight, strokeOpacity, zIndex;
+
+    if (hasHighlights) {
+      if (isHighlighted) {
+        // 高亮样式
+        strokeWeight = 8;
+        strokeOpacity = 1.0;
+        zIndex = 51;
+      } else {
+        // 其他线路变暗样式
+        strokeWeight = 4;
+        strokeOpacity = 0.5;
+        zIndex = 49;
+      }
+    } else {
+      // 默认样式
+      strokeWeight = 6;
+      strokeOpacity = 0.9;
+      zIndex = 50;
+    }
+
+    const polyline = new window.AMap.Polyline({
+      path: line.path,
+      strokeColor: line.color,
+      strokeOpacity: strokeOpacity,
+      strokeWeight: strokeWeight,
+      isOutline: true,       // 开启描边
+      outlineColor: '#FFFFFF', // 描边颜色
+      borderWeight: 2,       // 描边宽度
+      lineJoin: 'round',     // 折线连接处样式
+      lineCap: 'round',      // 折线两端头样式
+      zIndex: zIndex,
+    });
+    
+    mapInstance.value.add(polyline);
+    subwayLinesOverlay.value.push(polyline);
+  });
+};
+
+// 绘制热力图
+const drawHeatmap = () => {
+  if (!mapInstance.value) return;
+
+  const heatmapData = mapStore.heatmapData;
+  if (!heatmapData || heatmapData.length === 0) return;
+
+  // 如果热力图实例不存在，则创建
+  if (!heatmapInstance.value) {
+    heatmapInstance.value = new window.AMap.HeatMap(mapInstance.value, {
+      radius: 120, // 再次增大半径，让热力点可以连接成片
+      opacity: [0, 0.85], // 调整透明度使其更平滑
+      zIndex: 40, // 层级低于地铁线
+      '3d': {
+        height: 500, // 增加3D高度，但需要配合视角
+        gridSize: 50, // 调整格网大小
+      }
+    });
+  }
+
+  // 设置热力图数据
+  heatmapInstance.value.setDataSet({
+    data: heatmapData,
+    max: 100 // 降低最大值，让数据点显得更“热”，更容易融合
+  });
+
+  // 确保热力图是可见的
+  heatmapInstance.value.show();
 };
 
 // 显示站点覆盖圈
@@ -431,31 +631,6 @@ const addBikeMarkers = () => {
   });
 };
 
-// 搜索POI
-const searchPOI = () => {
-  if (!mapInstance.value || !searchKeyword.value) return;
-  
-  if (window.AMap) {
-    if (!placeSearch) {
-      // 创建POI搜索实例
-      mapInstance.value.plugin(['AMap.PlaceSearch'], () => {
-        placeSearch = new window.AMap.PlaceSearch({
-          pageSize: 10,
-          pageIndex: 1,
-          city: '北京', // 可根据需求设置城市
-          extensions: 'all'
-        });
-        
-        // 创建完成后执行搜索
-        performSearch();
-      });
-    } else {
-      // 已创建实例，直接搜索
-      performSearch();
-    }
-  }
-};
-
 // 执行搜索
 const performSearch = () => {
   if (!placeSearch) return;
@@ -509,16 +684,6 @@ const performSearch = () => {
       console.warn('POI搜索失败或无结果');
     }
   });
-};
-
-// 清除所有站点标记
-const clearMarkers = () => {
-  if (mapInstance.value && mapMarkers.value.length > 0) {
-    mapMarkers.value.forEach(marker => {
-      mapInstance.value.remove(marker);
-    });
-    mapMarkers.value = [];
-  }
 };
 
 // 清除所有单车标记
@@ -596,6 +761,12 @@ watch(() => mapStore.bikesData, () => {
   }
 });
 
+// 监听高亮线路变化，并重绘
+watch(() => mapStore.highlightedLines, () => {
+  drawSubwayLines();
+}, { deep: true });
+
+
 // 监听站点数据变化
 watch(() => mapStore.stations, (newStations) => {
   console.log('站点数据发生变化:', newStations);
@@ -606,24 +777,10 @@ watch(() => mapStore.stations, (newStations) => {
 });
 
 // 组件挂载时初始化地图
-onMounted(() => {
-  console.log('AMapComponent组件已挂载，初始化地图');
-  initMap();
-  
-  // 检查是否已有站点数据
-  const stations = mapStore.getStations;
-  console.log('检查站点数据是否已加载:', stations);
-  
-  // 如果已有站点数据，则添加标记
-  if (stations && stations.length > 0) {
-    console.log('已有站点数据，立即添加标记');
-    setTimeout(() => {
-      addStationMarkers();
-    }, 500);
-  } else {
-    console.log('暂无站点数据，等待数据加载后添加标记');
-  }
-});
+onMounted(async () => {
+          console.log('AMapComponent组件已挂载，初始化地图');
+          await initMap();
+        });
 
 // 组件卸载时清理资源
 onUnmounted(() => {
@@ -631,12 +788,14 @@ onUnmounted(() => {
     clearMarkers();
     clearBikeMarkers();
     removeStationCoverage();
+    clearSubwayLines(); // 清除地铁线路
     mapInstance.value = null;
   }
 });
 
 // 导出组件方法
 defineExpose({
+  getMapInstance: () => mapInstance.value,
   addStationMarkers,
   showStationCoverage,
   removeStationCoverage,

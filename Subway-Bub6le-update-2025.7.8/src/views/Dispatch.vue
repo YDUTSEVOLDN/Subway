@@ -428,9 +428,11 @@ watch(() => mapStore.selectedStation, (station) => {
   }
 });
 
-// 组件挂载时加载站点数据
+// 组件挂载时加载数据
 onMounted(async () => {
-  await mapStore.loadStations();
+  if (mapStore.stations.length === 0) {
+    await mapStore.loadSubwayData();
+  }
 });
 </script>
 

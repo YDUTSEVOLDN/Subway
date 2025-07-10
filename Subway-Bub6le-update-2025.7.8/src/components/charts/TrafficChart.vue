@@ -187,7 +187,13 @@ const updateChart = () => {
     },
     legend: {
       data: ['入站人流量', '出站人流量', '入站预测', '出站预测'],
-      right: '5%'
+      right: '5%',
+      top: '5%',
+      itemGap: 15,
+      padding: [5, 10],
+      textStyle: {
+        padding: [0, 5]
+      }
     },
     grid: {
       left: '3%',

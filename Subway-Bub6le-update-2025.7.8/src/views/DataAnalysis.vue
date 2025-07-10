@@ -592,21 +592,19 @@ const handleDateChange = () => {
 
 // 加载站点数据
 const loadStations = async () => {
-  try {
-    await mapStore.loadStations();
-    stations.value = mapStore.getStations;
-    
-    if (stations.value.length > 0) {
-      // 默认选择第一个站点
-      selectedStationForHeatmap.value = stations.value[0].id;
-      // 默认选择前三个站点进行比较
-      compareStations.value = stations.value.slice(0, Math.min(3, stations.value.length)).map(s => s.id);
-    }
-    
-    generateHeatmapData();
-  } catch (error) {
-    console.error('加载站点数据失败:', error);
+  if (mapStore.stations.length === 0) {
+    await mapStore.loadSubwayData();
   }
+  stations.value = mapStore.stations;
+  
+  if (stations.value.length > 0) {
+    // 默认选择第一个站点
+    selectedStationForHeatmap.value = stations.value[0].id;
+    // 默认选择前三个站点进行比较
+    compareStations.value = stations.value.slice(0, Math.min(3, stations.value.length)).map(s => s.id);
+  }
+  
+  generateHeatmapData();
 };
 
 // 监听站点和比较指标变化

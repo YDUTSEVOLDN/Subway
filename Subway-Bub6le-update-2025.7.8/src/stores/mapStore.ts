@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import subwayLinesData from '@/assets/subway-lines.json';
 
 // 定义站点类型
 export interface Station {
@@ -55,7 +56,10 @@ export const useMapStore = defineStore({
       bikeCount: number;
       status: 'pending' | 'executing' | 'completed';
       path: {lng: number, lat: number}[];
-    }[]
+    }[],
+    subwayLines: [] as any[],
+    heatmapData: [] as { lng: number; lat: number; count: number }[],
+    highlightedLines: new Set<string>(), // 新增：用于存储高亮线路的名称
   }),
   
   getters: {
@@ -108,7 +112,8 @@ export const useMapStore = defineStore({
       if (ratio <= 1.2) return 'success';
       if (ratio <= 2) return 'info';
       return 'warning';
-    }
+    },
+    getHeatmapData: (state) => state.heatmapData,
   },
   
   actions: {
@@ -117,46 +122,65 @@ export const useMapStore = defineStore({
       this.mapInstance = map;
     },
     
-    // 加载站点数据
-    loadStations() {
-      // 模拟异步加载
-      return new Promise<void>((resolve) => {
-        setTimeout(() => {
-          this.stations = [
-            {
-              id: 'S001',
-              name: '西二旗站',
-              lines: ['13号线', '昌平线'],
-              entrances: 4,
-              position: { lng: 116.307, lat: 40.052 }
-            },
-            {
-              id: 'S002',
-              name: '知春路站',
-              lines: ['13号线', '10号线'],
-              entrances: 6,
-              position: { lng: 116.344, lat: 39.978 }
-            },
-            {
-              id: 'S003',
-              name: '五道口站',
-              lines: ['13号线'],
-              entrances: 3,
-              position: { lng: 116.339, lat: 39.993 }
-            },
-            {
-              id: 'S004',
-              name: '中关村站',
-              lines: ['4号线'],
-              entrances: 4,
-              position: { lng: 116.318, lat: 39.984 }
-            }
-          ];
-          
-          console.log('站点数据已加载:', this.stations);
-          resolve();
-        }, 100); // 减少延迟时间
+    findStationByName(name: string): Station | undefined {
+      return this.stations.find(station => station.name === name);
+    },
+
+    // 新增：设置高亮线路
+    setHighlightedLines(lines: string[]) {
+      this.highlightedLines = new Set(lines);
+    },
+
+    async loadSubwayData() {
+      // 从导入的 JSON 文件中处理数据
+      const allStations = new Map<string, Station>();
+      
+      this.subwayLines = subwayLinesData.map(line => {
+        line.stations.forEach(stationData => {
+          const stationKey = `${stationData.coord[0]}-${stationData.coord[1]}`;
+          if (!allStations.has(stationKey)) {
+            allStations.set(stationKey, {
+              id: stationKey,
+              name: stationData.name,
+              position: { lng: stationData.coord[0], lat: stationData.coord[1] },
+              lines: [],
+              entrances: 0, // 原始数据中没有入口信息，暂设为0
+            });
+          }
+          const station = allStations.get(stationKey)!;
+          if (!station.lines.includes(line.name)) {
+            station.lines.push(line.name);
+          }
+        });
+        
+        return {
+          name: line.name,
+          color: line.color,
+          path: line.stations.map(s => s.coord),
+        };
       });
+
+      this.stations = Array.from(allStations.values());
+      
+      console.log('完整的地铁线路数据已加载:', this.subwayLines);
+      console.log('所有站点数据已生成:', this.stations);
+
+      // 数据加载后，生成热力图
+      this.generateHeatmapData();
+    },
+
+    // 生成热力图数据
+    generateHeatmapData() {
+      if (this.stations.length === 0) return;
+      
+      this.heatmapData = this.stations.map(station => ({
+        lng: station.position.lng,
+        lat: station.position.lat,
+        // 模拟客流量，数值越大，热力越强
+        count: Math.floor(Math.random() * 500) + 100 
+      }));
+
+      console.log('热力图数据已生成:', this.heatmapData);
     },
     
     // 选择站点

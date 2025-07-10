@@ -1,26 +1,5 @@
 <template>
   <div class="dashboard">
-    <div class="top-stats">
-      <el-row :gutter="16">
-        <el-col :span="6" v-for="stat in stats" :key="stat.title">
-          <div class="stat-card" :class="stat.type">
-            <div class="stat-icon">
-              <el-icon><component :is="stat.icon"></component></el-icon>
-            </div>
-            <div class="stat-info">
-              <h3>{{ stat.title }}</h3>
-              <div class="stat-value">{{ stat.value }}</div>
-              <div class="stat-change" :class="{ 'up': stat.change > 0, 'down': stat.change < 0 }">
-                <el-icon v-if="stat.change > 0"><CaretTop /></el-icon>
-                <el-icon v-else-if="stat.change < 0"><CaretBottom /></el-icon>
-                {{ Math.abs(stat.change) }}%
-              </div>
-            </div>
-          </div>
-        </el-col>
-      </el-row>
-    </div>
-    
     <div class="map-section">
       <AMapComponent ref="mapRef" />
       
@@ -114,8 +93,14 @@ import AMapComponent from '../components/common/AMapComponent.vue';
 import TrafficChart from '../components/charts/TrafficChart.vue';
 import api from '../api';
 import { useRouter } from 'vue-router';
+import realBikeData from '@/assets/bike_data.json';
 
 // 定义接口类型
+interface BikeData {
+  station_name: string;
+  bike_count: number;
+}
+
 interface TrafficFlowData {
   stationId: string;
   currentFlow: {
@@ -154,43 +139,30 @@ const router = useRouter();
 const mapStore = useMapStore();
 const mapRef = ref(null);
 
-// 初始数据
-const stats = ref([
-  {
-    title: '今日客流',
-    value: '23,522',
-    change: 15.8,
-    icon: 'UserFilled',
-    type: 'primary'
-  },
-  {
-    title: '单车总数',
-    value: '6,421',
-    change: 2.3,
-    icon: 'Bicycle',
-    type: 'success'
-  },
-  {
-    title: '调度次数',
-    value: '18',
-    change: -5.4,
-    icon: 'Location',
-    type: 'warning'
-  },
-  {
-    title: '预警事件',
-    value: '3',
-    change: -12.5,
-    icon: 'Warning',
-    type: 'danger'
-  }
-]);
-
 // 当前选中站点的流量数据
 const stationTraffic = ref<TrafficFlowData | null>(null);
 
-// 当前选中站点的共享单车状态
-const bikeStatus = ref<BikeSupplyDemand | null>(null);
+// 当前选中站点的共享单车状态 (现在基于真实数据和流量数据计算)
+const bikeStatus = computed<BikeSupplyDemand | null>(() => {
+  const station = mapStore.selectedStation;
+  const traffic = stationTraffic.value;
+  if (!station || !traffic) return null;
+
+  const bikeInfo = (realBikeData as BikeData[]).find((b: BikeData) => b.station_name === station.name);
+  const supply = bikeInfo ? bikeInfo.bike_count : 0;
+
+  // 使用出站人流作为需求量的基础 (可以根据实际业务调整系数)
+  const demand = Math.ceil(traffic.currentFlow.outflow * 0.1); 
+  const ratio = supply / (demand || 1);
+
+  return {
+    stationId: station.id,
+    supply,
+    demand,
+    ratio,
+    status: getStatusClass(ratio)
+  };
+});
 
 // 共享单车供需状态文字
 const bikeStatusText = computed(() => {
@@ -215,7 +187,6 @@ watch(() => mapStore.selectedStation, async (station) => {
     await loadStationData(station.id);
   } else {
     stationTraffic.value = null;
-    bikeStatus.value = null;
   }
 }, { immediate: true });
 
@@ -225,21 +196,6 @@ async function loadStationData(stationId: string) {
     // 获取流量预测数据
     const traffic = await api.getTrafficPredict(stationId);
     stationTraffic.value = traffic as TrafficFlowData;
-    
-    // 获取共享单车状态
-    const status = await api.getBikeStatus(stationId);
-    bikeStatus.value = status as BikeSupplyDemand;
-    
-    // 获取周边单车分布
-    const bikes = await api.getBikesNearStation(stationId);
-    // 转换bikes类型，确保type字段符合要求
-    const typedBikes = bikes.map(bike => ({
-      ...bike,
-      type: bike.type === 'electric' || bike.type === 'regular' ? 
-        bike.type as 'electric' | 'regular' : 'regular' as const
-    }));
-    // 使用正确的方法名或直接设置数据
-    mapStore.bikesData = typedBikes;
   } catch (error) {
     console.error('加载站点数据失败', error);
   }
@@ -260,21 +216,8 @@ function createDispatchPlan() {
 
 // 在组件挂载时加载站点数据
 onMounted(async () => {
-  console.log('Dashboard组件已挂载，开始加载站点数据');
-  try {
-    // 延迟加载站点数据，确保地图组件已完全加载
-    setTimeout(async () => {
-      await mapStore.loadStations();
-      console.log('站点数据加载完成:', mapStore.stations);
-      
-      // 如果有地图引用，尝试添加站点标记
-      if (mapRef.value) {
-        console.log('尝试调用地图组件的addStationMarkers方法');
-        (mapRef.value as any).addStationMarkers();
-      }
-    }, 1000);
-  } catch (error) {
-    console.error('加载站点数据失败:', error);
+  if (mapStore.stations.length === 0) {
+    await mapStore.loadSubwayData();
   }
 });
 </script>
@@ -398,6 +341,7 @@ onMounted(async () => {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        margin-bottom: 8px;
         
         h3 {
           margin: 0;
@@ -437,8 +381,7 @@ onMounted(async () => {
           }
           
           .flow-chart {
-            height: 200px;
-            margin-bottom: 16px;
+            margin-bottom: 24px;
           }
         }
       }

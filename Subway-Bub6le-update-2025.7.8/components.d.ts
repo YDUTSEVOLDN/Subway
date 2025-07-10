@@ -62,10 +62,12 @@ declare module 'vue' {
     ElTimePicker: typeof import('element-plus/es')['ElTimePicker']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     HeatMapChart: typeof import('./src/components/charts/HeatMapChart.vue')['default']
+    NavigationPanel: typeof import('./src/components/common/NavigationPanel.vue')['default']
     PathVisualizer: typeof import('./src/components/common/PathVisualizer.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Sidebar: typeof import('./src/components/layout/Sidebar.vue')['default']
+    SubwayLegend: typeof import('./src/components/common/SubwayLegend.vue')['default']
     TimeSimulator: typeof import('./src/components/common/TimeSimulator.vue')['default']
     TrafficChart: typeof import('./src/components/charts/TrafficChart.vue')['default']
   }
