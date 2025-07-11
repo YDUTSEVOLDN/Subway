@@ -1,9 +1,16 @@
 package com.subBike.server.entity;
 
+import com.subBike.server.entity.id.BikeAmountID;
+import com.subBike.server.entity.id.SubAmountID;
+import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.Table;
 
 import java.sql.Date;
-
+@Table(name="bikeAmount")
+@IdClass(BikeAmountID.class)
+@Entity
 public class BikeAmount {
     @Id
     String station;
@@ -15,6 +22,9 @@ public class BikeAmount {
         this.station = station;
         this.date = date;
         this.numBer = numBer;
+    }
+
+    public BikeAmount() {
     }
 
     public String getStation() {

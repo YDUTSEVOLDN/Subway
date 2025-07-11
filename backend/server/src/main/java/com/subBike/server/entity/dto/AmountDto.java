@@ -1,6 +1,6 @@
 package com.subBike.server.entity.dto;
 
-import io.swagger.models.auth.In;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "流量数据传输对象")

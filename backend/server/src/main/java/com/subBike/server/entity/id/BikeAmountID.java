@@ -2,10 +2,11 @@ package com.subBike.server.entity.id;
 
 import jakarta.persistence.Id;
 
+import java.io.Serializable;
 import java.sql.Date;
 import java.util.Objects;
 
-public class BikeAmountID {
+public class BikeAmountID implements Serializable {
 
     String station;
 

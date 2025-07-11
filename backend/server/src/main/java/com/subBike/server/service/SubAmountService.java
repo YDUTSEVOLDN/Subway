@@ -1,19 +1,17 @@
 package com.subBike.server.service;
 
-import com.subBike.server.entity.SubAmount;
 import com.subBike.server.entity.dto.AmountDto;
 import com.subBike.server.entity.dto.DateAmountDto;
 import com.subBike.server.entity.dto.TimeAmountDto;
-import com.subBike.server.entity.id.SubAmountID;
 import com.subBike.server.mapper.SubAmountMapper;
-import io.swagger.v3.oas.annotations.Parameter;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class SubAmountService implements ISubAmountService{
@@ -52,7 +50,6 @@ public class SubAmountService implements ISubAmountService{
 
         return subAmountmapper.getTrend(date);
     }
-
 
 
 }
