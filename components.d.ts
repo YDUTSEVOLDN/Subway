@@ -53,6 +53,7 @@ declare module 'vue' {
     PathDetailsNew: typeof import('./src/components/common/PathDetailsNew.vue')['default']
     PathVisualizer: typeof import('./src/components/common/PathVisualizer.vue')['default']
     RankingChart: typeof import('./src/components/analysis/RankingChart.vue')['default']
+    RouteDetailsPanel: typeof import('./src/components/common/RouteDetailsPanel.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Sidebar: typeof import('./src/components/layout/Sidebar.vue')['default']

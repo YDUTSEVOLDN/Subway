@@ -18,13 +18,13 @@
         <div class="left-controls">
           <!-- 图层控制 -->
           <div class="layer-control-group">
-            <el-radio-group v-model="mapType" size="small" @change="(type: string | number | boolean) => handleMapTypeChange(type as number)">
+            <el-radio-group v-model="mapType" size="small" @change="(type: string | number | boolean | undefined) => handleMapTypeChange(type as number)">
               <el-radio-button :label="0">标准图</el-radio-button>
               <el-radio-button :label="1">卫星图</el-radio-button>
             </el-radio-group>
-            <el-checkbox v-model="showSubwayLines" label="路网" size="small" @change="(visible: string | number | boolean) => handleSubwayLinesChange(visible as boolean)" />
-            <el-checkbox v-model="showHeatmap" label="热力图" size="small" @change="(visible: string | number | boolean) => handleHeatmapChange(visible as boolean)" />
-            <el-checkbox v-model="showTraffic" label="路况" size="small" class="traffic-checkbox" @change="(visible: string | number | boolean) => handleTrafficChange(visible as boolean)" />
+            <el-checkbox v-model="showSubwayLines" label="路网" size="small" @change="(visible: string | number | boolean | undefined) => handleSubwayLinesChange(visible as boolean)" />
+            <el-checkbox v-model="showHeatmap" label="热力图" size="small" @change="(visible: string | number | boolean | undefined) => handleHeatmapChange(visible as boolean)" />
+            <el-checkbox v-model="showTraffic" label="路况" size="small" class="traffic-checkbox" @change="(visible: string | number | boolean | undefined) => handleTrafficChange(visible as boolean)" />
           </div>
 
           <!-- 日期选择器 -->
@@ -72,26 +72,48 @@
       </div>
     </div>
 
-    <!-- 新增：导航面板 -->
-    <div class="navigation-panel" :class="{ 'is-visible': navigationPanelVisible }">
-      <div class="panel-header">
-        <div class="travel-modes">
-          <el-button :type="currentTravelMode === 'driving' ? 'primary' : 'default'" circle @click="currentTravelMode = 'driving'"><el-icon size="24"><Van /></el-icon></el-button>
-          <el-button :type="currentTravelMode === 'riding' ? 'primary' : 'default'" circle @click="currentTravelMode = 'riding'"><el-icon size="24"><Bicycle /></el-icon></el-button>
-          <el-button :type="currentTravelMode === 'walking' ? 'primary' : 'default'" circle @click="currentTravelMode = 'walking'"><el-icon size="24"><Guide /></el-icon></el-button>
+    <!-- 统一的侧边面板容器，取代了旧的两个独立面板 -->
+    <div class="side-panel-container">
+      <transition name="slide-down" mode="out-in">
+        <!-- 导航输入视图 -->
+        <div v-if="panelState === 'input'" class="panel-wrapper" key="input">
+          <div class="panel-header">
+            <div class="travel-modes">
+              <el-button :type="currentTravelMode === 'driving' ? 'primary' : 'default'" circle @click="currentTravelMode = 'driving'"><el-icon size="24"><Van /></el-icon></el-button>
+              <el-button :type="currentTravelMode === 'riding' ? 'primary' : 'default'" circle @click="currentTravelMode = 'riding'"><el-icon size="24"><Bicycle /></el-icon></el-button>
+              <el-button :type="currentTravelMode === 'walking' ? 'primary' : 'default'" circle @click="currentTravelMode = 'walking'"><el-icon size="24"><Guide /></el-icon></el-button>
+            </div>
+            <el-button class="close-btn" @click="toggleNavigationPanel" circle>
+              <el-icon><Close /></el-icon>
+            </el-button>
+          </div>
+          <div class="panel-body">
+            <div class="route-inputs">
+              <el-input placeholder="请输入起点" v-model="routeStart" size="large"></el-input>
+              <el-input placeholder="请输入终点" v-model="routeEnd" size="large"></el-input>
+            </div>
+            <el-button type="primary" class="search-route-btn" @click="searchRoute">开始导航</el-button>
+          </div>
         </div>
-        <el-button class="close-btn" @click="toggleNavigationPanel" circle>
-          <el-icon><Close /></el-icon>
-        </el-button>
-      </div>
-      <div class="panel-body">
-        <div class="route-inputs">
-          <el-input placeholder="请输入起点" v-model="routeStart" size="large"></el-input>
-          <el-input placeholder="请输入终点" v-model="routeEnd" size="large"></el-input>
-        </div>
-        <el-button type="primary" class="search-route-btn" @click="searchRoute">开始导航</el-button>
-      </div>
+
+        <!-- 导航详情视图 -->
+        <route-details-panel
+          v-else-if="panelState === 'details' && currentNavPath"
+          class="panel-wrapper"
+          key="details"
+          :path-data="currentNavPath"
+          @close="panelState = 'hidden'; currentNavPath = null"
+        />
+      </transition>
     </div>
+
+    <!-- 路径可视化组件保持不变 -->
+    <path-visualizer
+      v-if="currentNavPath"
+      :path="currentNavPath"
+      :map-instance="mapInstance"
+      :auto-fit="true"
+    />
   </div>
 </template>
 
@@ -102,6 +124,20 @@ import { useLayoutStore } from '../../stores/layoutStore';
 import { Loading, Search, ArrowDown, Promotion, Close, Van, Bicycle, Guide } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import bikeDataRaw from '../../assets/bike_data.json';
+import PathVisualizer from './PathVisualizer.vue';
+import RouteDetailsPanel from './RouteDetailsPanel.vue'; // 新增：导入详情面板
+
+// 为通用导航功能定义一个路径数据类型
+interface PathDataForNav {
+  id: string;
+  path: { lng: number; lat: number }[];
+  distance: number;
+  duration: number;
+  source: { name: string };
+  target: { name: string };
+  color?: string;
+  steps?: any[]; // 新增：用于存储导航步骤
+}
 
 declare global {
   interface Window {
@@ -161,82 +197,138 @@ const handleMouseLeave = () => {
 const layoutStore = useLayoutStore();
 const mapStore = useMapStore();
 
+// 新增：使用统一的 panelState 替代 navigationPanelVisible
+const panelState = ref<'hidden' | 'input' | 'details'>('hidden');
+
 // 导航面板相关状态
-const navigationPanelVisible = ref(false);
 const currentTravelMode = ref('driving'); // driving, riding, walking
 const routeStart = ref('');
 const routeEnd = ref('');
 const driving = ref<any>(null);
 const riding = ref<any>(null);
 const walking = ref<any>(null);
+const currentNavPath = ref<PathDataForNav | null>(null);
+const geocoder = ref<any>(null);
 
 const toggleNavigationPanel = () => {
-  navigationPanelVisible.value = !navigationPanelVisible.value;
+  // 如果任何面板是打开的，则关闭它。否则，打开输入面板。
+  if (panelState.value === 'input' || panelState.value === 'details') {
+    panelState.value = 'hidden';
+    // 如果是从详情页关闭，也一并清除路径
+    if (currentNavPath.value) {
+      currentNavPath.value = null;
+    }
+  } else {
+    panelState.value = 'input';
+    currentNavPath.value = null; // 每次打开输入时，都清除旧路径
+  }
 };
 
-const searchRoute = () => {
-  console.log('开始执行 searchRoute 函数...');
+const searchRoute = async () => {
   if (!routeStart.value || !routeEnd.value) {
     ElMessage.warning('请输入起点和终点');
     return;
   }
 
-  console.log(`起点: ${routeStart.value}, 终点: ${routeEnd.value}, 模式: ${currentTravelMode.value}`);
+  currentNavPath.value = null;
 
-  // 清除旧的路线
-  driving.value?.clear();
-  riding.value?.clear();
-  walking.value?.clear();
+  // 使用地理编码将地址转换为坐标
+  const geocodeAddress = (address: string): Promise<[number, number]> => {
+    return new Promise((resolve, reject) => {
+      if (!geocoder.value) {
+        reject(new Error('地理编码服务未初始化'));
+        return;
+      }
+      geocoder.value.getLocation(address, (status: string, result: any) => {
+        if (status === 'complete' && result.info === 'OK' && result.geocodes.length > 0) {
+          const location = result.geocodes[0].location;
+          resolve([location.lng, location.lat]);
+        } else {
+          reject(new Error(`地址解析失败: ${address}`));
+        }
+      });
+    });
+  };
 
-  const start = routeStart.value;
-  const end = routeEnd.value;
+  try {
+    const [startCoords, endCoords] = await Promise.all([
+      geocodeAddress(routeStart.value),
+      geocodeAddress(routeEnd.value),
+    ]);
 
-  let searchService;
-  let successMsg = '';
-  let errorMsg = '';
+    let searchService;
+    let successMsg = '';
+    let errorMsg = '';
 
-  switch (currentTravelMode.value) {
-    case 'driving':
-      searchService = driving.value;
-      successMsg = '驾车路线规划成功';
-      errorMsg = '驾车路线规划失败，请检查起终点是否有效';
-      break;
-    case 'riding':
-      searchService = riding.value;
-      successMsg = '骑行路线规划成功';
-      errorMsg = '骑行路线规划失败，请检查起终点是否有效';
-      break;
-    case 'walking':
-      searchService = walking.value;
-      successMsg = '步行路线规划成功';
-      errorMsg = '步行路线规划失败，请检查起终点是否有效';
-      break;
-    default:
-      console.error('未知的交通模式');
-      return;
-  }
-
-  console.log('选择的导航服务实例:', searchService);
-
-  if (!searchService) {
-    ElMessage.error('导航服务尚未初始化，请稍后再试');
-    console.error('导航服务实例为空，无法执行搜索');
-    return;
-  }
-
-  console.log('调用高德地图 search 方法...');
-  searchService.search(start, end, (status: string, result: any) => {
-    console.log(`高德地图回调状态: ${status}`);
-    console.log('高德地图回调结果:', result);
-    if (status === 'complete') {
-      ElMessage.success(successMsg);
-      // 路线规划成功后自动关闭面板，让用户专注于地图
-      navigationPanelVisible.value = false;
-    } else {
-      ElMessage.error(errorMsg);
-      console.error('高德地图路线规划失败，详细信息:', result);
+    switch (currentTravelMode.value) {
+      case 'driving':
+        searchService = driving.value;
+        successMsg = '驾车路线规划成功';
+        errorMsg = '驾车路线规划失败';
+        break;
+      case 'riding':
+        searchService = riding.value;
+        successMsg = '骑行路线规划成功';
+        errorMsg = '骑行路线规划失败';
+        break;
+      case 'walking':
+        searchService = walking.value;
+        successMsg = '步行路线规划成功';
+        errorMsg = '步行路线规划失败';
+        break;
+      default:
+        console.error('未知的交通模式');
+        return;
     }
-  });
+
+    if (!searchService) {
+      ElMessage.error('导航服务尚未初始化，请稍后再试');
+      return;
+    }
+
+    searchService.search(startCoords, endCoords, (status: string, result: any) => {
+      if (status === 'complete' && result.routes && result.routes.length > 0) {
+        ElMessage.success(successMsg);
+        // 关键改动：切换面板状态以触发动画
+        panelState.value = 'details';
+
+        const route = result.routes[0];
+        const pathCoords: { lng: number; lat: number }[] = [];
+        if (route.steps) {
+          route.steps.forEach((step: any) => {
+            if (step.path) {
+              step.path.forEach((p: any) => {
+                if (p && typeof p.lng === 'number' && typeof p.lat === 'number') {
+                  pathCoords.push({ lng: p.lng, lat: p.lat });
+                }
+              });
+            }
+          });
+        }
+        
+        currentNavPath.value = {
+          id: `nav-${Date.now()}`,
+          path: pathCoords,
+          distance: route.distance / 1000,
+          duration: Math.round(route.time / 60),
+          source: { name: routeStart.value },
+          target: { name: routeEnd.value },
+          color: '#4DD0E1',
+          steps: route.steps, // 保存详细步骤
+        };
+        
+        // 关键改动：切换面板状态以触发动画
+        panelState.value = 'details';
+
+      } else {
+        ElMessage.error(errorMsg);
+        console.error('高德地图路线规划失败:', result);
+      }
+    });
+  } catch (error) {
+    ElMessage.error((error as Error).message);
+    console.error('路线规划前置步骤失败:', error);
+  }
 };
 
 
@@ -389,7 +481,7 @@ const initMap = async () => {
       });
       
       // 添加控件 - 大幅简化
-      map.plugin(['AMap.ToolBar', 'AMap.Scale', 'AMap.Geolocation', 'AMap.Driving', 'AMap.Riding', 'AMap.Walking'], () => {
+      map.plugin(['AMap.ToolBar', 'AMap.Scale', 'AMap.Geolocation', 'AMap.Driving', 'AMap.Riding', 'AMap.Walking', 'AMap.Geocoder'], () => {
         // 工具条控件 (右下角)
         map.addControl(new window.AMap.ToolBar({
           position: 'RB'
@@ -406,10 +498,15 @@ const initMap = async () => {
           showButton: true
         }));
 
-        // 初始化路线规划插件
-        driving.value = new window.AMap.Driving({ map });
-        riding.value = new window.AMap.Riding({ map });
-        walking.value = new window.AMap.Walking({ map });
+        // 新增：初始化地理编码插件
+        geocoder.value = new window.AMap.Geocoder({
+          city: '全国'
+        });
+
+        // 初始化路线规划插件，但不与地图实例绑定 (map: null)
+        driving.value = new window.AMap.Driving({ map: null, policy: window.AMap.DrivingPolicy.LEAST_TIME });
+        riding.value = new window.AMap.Riding({ map: null });
+        walking.value = new window.AMap.Walking({ map: null });
       });
       
       // 新增：手动创建图层实例，用于自定义切换
@@ -1122,5 +1219,49 @@ defineExpose({
 
 .search-route-btn {
   width: 100%;
+}
+
+/* 为 RouteDetailsPanel 添加的动画 */
+.slide-fade-enter-active {
+  transition: all 0.4s ease-out;
+}
+.slide-fade-leave-active {
+  transition: all 0.4s cubic-bezier(1, 0.5, 0.8, 1);
+}
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateX(20px);
+  opacity: 0;
+}
+
+/* 新增：侧边面板容器样式 */
+.side-panel-container {
+  position: absolute;
+  top: 90px;
+  right: 20px;
+  width: 380px;
+  z-index: 1001;
+}
+
+/* 新增：包裹器，用于统一添加背景和阴影 */
+.panel-wrapper {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+/* 新增：面板切换动画 */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease-in-out;
+}
+.slide-down-enter-from {
+  transform: translateY(-30px);
+  opacity: 0;
+}
+.slide-down-leave-to {
+  transform: translateY(30px);
+  opacity: 0;
 }
 </style> 

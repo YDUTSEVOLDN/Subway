@@ -44,7 +44,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { Close } from '@element-plus/icons-vue';
-import type { Station } from '../../stores/mapStore';
+
+// 定义一个更通用的路径节点类型，而不是强依赖于Station
+interface PathNode {
+  name: string;
+}
 
 interface PathPoint {
   lng: number;
@@ -54,8 +58,8 @@ interface PathPoint {
 interface PathData {
   id?: string;
   name?: string;
-  source?: Station;
-  target?: Station;
+  source?: PathNode; // 使用通用类型
+  target?: PathNode; // 使用通用类型
   path?: PathPoint[];
   bikeCount?: number;
   color?: string;
@@ -186,8 +190,8 @@ const drawPath = () => {
       const polyline = new window.AMap.Polyline({
         path: points,
         strokeColor: currentPath.value.color || '#409EFF',
-        strokeWeight: 5,
-        strokeOpacity: 0.8,
+        strokeWeight: 14, // 进一步加粗
+        strokeOpacity: 0.9,
         strokeStyle: 'solid',
         lineJoin: 'round',
         lineCap: 'round'
