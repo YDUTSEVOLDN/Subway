@@ -95,12 +95,14 @@
               />
             </el-form-item>
             
-            <el-form-item label="用户类型" prop="role">
-              <el-radio-group v-model="registerForm.role">
-                <el-radio-button label="user">普通用户</el-radio-button>
-                <el-radio-button label="manager">单车管理员</el-radio-button>
-                <el-radio-button label="subway">地铁管理员</el-radio-button>
-              </el-radio-group>
+            <el-form-item label="角色" prop="role" v-if="isRegister">
+              <div class="role-selection">
+                <el-radio-group v-model="registerForm.role">
+                  <el-radio-button value="user">普通用户</el-radio-button>
+                  <el-radio-button value="manager">单车管理员</el-radio-button>
+                  <el-radio-button value="subway">地铁管理员</el-radio-button>
+                </el-radio-group>
+              </div>
             </el-form-item>
             
             <el-form-item>
@@ -121,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { User, Lock, Message } from '@element-plus/icons-vue';
@@ -131,6 +133,7 @@ import type { FormItemRule } from 'element-plus';
 const router = useRouter();
 const route = useRoute();
 const activeTab = ref('login');
+const isRegister = computed(() => activeTab.value === 'register');
 const loading = ref(false);
 const rememberMe = ref(false);
 const userStore = useUserStore();

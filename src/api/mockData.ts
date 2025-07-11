@@ -261,43 +261,10 @@ export const generateDispatchPlans = () => {
   ];
 };
 
-// 生成路径规划
+// 生成路径规划（已废弃，使用真实地图API）
 export const generateDispatchRoute = (sourceId: number, destinationId: number) => {
-  const source = mockStations.find(s => s.id === sourceId);
-  const destination = mockStations.find(s => s.id === destinationId);
-  
-  if (!source || !destination) return null;
-  
-  // 生成途经点（为了让路径更自然）
-  const waypoints = [];
-  const pointCount = Math.floor(Math.random() * 3) + 2;
-  
-  for (let i = 0; i < pointCount; i++) {
-    const progress = (i + 1) / (pointCount + 1);
-    
-    // 基于起点和终点间的线性插值，加上一些随机扰动
-    const lng = source.position.lng + progress * (destination.position.lng - source.position.lng) +
-      (Math.random() - 0.5) * 0.01;
-    const lat = source.position.lat + progress * (destination.position.lat - source.position.lat) +
-      (Math.random() - 0.5) * 0.01;
-    
-    waypoints.push({ lng, lat });
-  }
-  
-  // 完整路径包括起点、途经点和终点
-  const path = [
-    source.position,
-    ...waypoints,
-    destination.position
-  ];
-  
-  return {
-    sourceId,
-    destinationId,
-    distance: Math.floor(Math.random() * 5) + 3, // 3-8公里
-    duration: Math.floor(Math.random() * 30) + 15, // 15-45分钟
-    path
-  };
+  console.warn('generateDispatchRoute 已废弃，请使用真实的地图API进行路径规划');
+  return null;
 };
 
 export const generateStationRanking = (metric: string, limit: number) => {

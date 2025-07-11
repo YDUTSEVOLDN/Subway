@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import subwayLinesData from '@/assets/subway-lines.json';
+import type { PathPlanningResult } from '../types/path';
 
 // 定义站点类型
 export interface Station {
@@ -33,6 +34,21 @@ export interface TrafficData {
   outFlow: number;
 }
 
+// 增加 SavedPathData 接口定義
+export interface SavedPathData extends PathPlanningResult {
+  id: string;
+  name: string;
+  source: Station;
+  target: Station;
+  bikeCount: number;
+  options: any; // 这里的 any 可以根据 PathPlanningOptions 进一步细化
+  scheduleTime?: string;
+  priority?: number;
+  note?: string;
+  color?: string;
+  status?: 'pending' | 'in-progress' | 'completed';
+}
+
 export const useMapStore = defineStore({
   id: 'map',
   
@@ -46,6 +62,7 @@ export const useMapStore = defineStore({
     currentTime: new Date(),
     predictionData: [] as TrafficData[],
     trafficLayer: null as any, // 添加路况图层
+    paths: [] as SavedPathData[], // 新增：用於保存的路徑規劃
     
     // 调度方案相关
     dispatchPlans: [] as {
@@ -126,6 +143,16 @@ export const useMapStore = defineStore({
       return this.stations.find(station => station.name === name);
     },
 
+    findStationById(id: string): Station | undefined {
+      return this.stations.find(station => station.id === id);
+    },
+
+    async fetchStations() {
+      if (this.stations.length === 0) {
+        await this.loadSubwayData();
+      }
+    },
+
     // 新增：设置高亮线路
     setHighlightedLines(lines: string[]) {
       this.highlightedLines = new Set(lines);
@@ -168,6 +195,22 @@ export const useMapStore = defineStore({
       // 数据加载后，生成热力图
       this.generateHeatmapData();
     },
+
+    // --- Path Management Actions ---
+    addPath(path: SavedPathData) {
+      if (!this.paths.some(p => p.id === path.id)) {
+        this.paths.push(path);
+      }
+    },
+
+    removePath(pathId: string) {
+      this.paths = this.paths.filter(p => p.id !== pathId);
+    },
+
+    clearAllPaths() {
+      this.paths = [];
+    },
+    // -----------------------------
 
     // 生成热力图数据
     generateHeatmapData() {
@@ -301,28 +344,12 @@ export const useMapStore = defineStore({
     addDispatchPlan(sourceStation: Station, targetStation: Station, bikeCount: number) {
       const id = `DP${this.dispatchPlans.length + 1}`;
       
-      // 创建路径点（简单演示，实际项目应使用路径规划API）
-      const path = [];
-      const pointCount = Math.floor(Math.random() * 5) + 3; // 3-7个路径点
-      
-      const startLng = sourceStation.position.lng;
-      const startLat = sourceStation.position.lat;
-      const endLng = targetStation.position.lng;
-      const endLat = targetStation.position.lat;
-      
-      // 起点
-      path.push({lng: startLng, lat: startLat});
-      
-      // 中间点
-      for (let i = 1; i < pointCount - 1; i++) {
-        const ratio = i / (pointCount - 1);
-        const lng = startLng + (endLng - startLng) * ratio + (Math.random() - 0.5) * 0.01;
-        const lat = startLat + (endLat - startLat) * ratio + (Math.random() - 0.5) * 0.01;
-        path.push({lng, lat});
-      }
-      
-      // 终点
-      path.push({lng: endLng, lat: endLat});
+      // 使用真实路径规划API（需要异步处理）
+      // 这里暂时使用直线路径，实际使用时应该调用路径规划服务
+      const path = [
+        {lng: sourceStation.position.lng, lat: sourceStation.position.lat},
+        {lng: targetStation.position.lng, lat: targetStation.position.lat}
+      ];
       
       // 添加到调度方案列表
       this.dispatchPlans.push({

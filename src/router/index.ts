@@ -82,27 +82,35 @@ router.beforeEach(async (to, from, next) => {
   // 设置页面标题
   document.title = `${to.meta.title || '智慧交通'} - 监控与调度平台`;
   
-  // 检查页面是否需要登录验证
   const isPublicPage = to.meta.public;
-  const isLoggedIn = localStorage.getItem('token');
-  const requiresAdmin = to.meta.requiresAdmin;
-  const userStore = (await import('../stores/userStore')).useUserStore();
+  const isLoggedIn = !!localStorage.getItem('token');
+  
+  // 如果是公開頁面，直接放行
+  if (isPublicPage) {
+    return next();
+  }
 
-  if (!isPublicPage && !isLoggedIn) {
-    next({ name: 'login', query: { redirect: to.fullPath } });
-  } else if (to.meta.allowedRoles) {
-    const hasRole = (to.meta.allowedRoles as string[]).includes(userStore.userRole);
-    if (!hasRole) {
-      ElMessageBox.alert('当前功能暂未向普通用户开放','权限不足');
-      return false;
-    }
+  // 如果需要驗證但未登錄，重定向到登錄頁
+  if (!isLoggedIn) {
+    return next({ name: 'login', query: { redirect: to.fullPath } });
+  }
+
+  // 如果已登錄，進行權限檢查
+  const userStore = (await import('../stores/userStore')).useUserStore();
+  const { userRole, isAdmin } = userStore;
+  const { requiresAdmin, allowedRoles } = to.meta;
+
+  if (requiresAdmin && !isAdmin) {
+    ElMessageBox.alert('您没有权限访问此页面', '权限不足');
+    return next({ name: 'dashboard' });
+  }
+
+  if (allowedRoles && !(allowedRoles as string[]).includes(userRole)) {
+    ElMessageBox.alert('当前功能暂未向您的角色开放', '权限不足');
+    return next(false);
   }
   
-  if (requiresAdmin && !userStore.isAdmin) {
-    next({ name: 'dashboard' });
-  } else {
-    next();
-  }
+  next();
 });
 
 export default router;

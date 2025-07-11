@@ -1,13 +1,13 @@
 <template>
   <el-card>
     <template #header>
-      <div class="card-header-with-filter">
-        <div class="title">时段客流量趋势</div>
+      <div class="clearfix">
         <el-radio-group v-model="timeRange" size="small" @change="fetchTrendData">
-          <el-radio-button label="day">日</el-radio-button>
-          <el-radio-button label="week">周</el-radio-button>
-          <el-radio-button label="month">月</el-radio-button>
+          <el-radio-button value="day">日</el-radio-button>
+          <el-radio-button value="week">周</el-radio-button>
+          <el-radio-button value="month">月</el-radio-button>
         </el-radio-group>
+        <span style="margin-left: 20px;">客流趋势</span>
       </div>
     </template>
     <div class="chart-container" style="height: 400px; position: relative;">
