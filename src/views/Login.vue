@@ -95,11 +95,14 @@
               />
             </el-form-item>
             
-            <el-form-item label="用户类型" prop="role">
-              <el-radio-group v-model="registerForm.role">
-                <el-radio-button label="user">普通用户</el-radio-button>
-                <el-radio-button label="manager">单车管理员</el-radio-button>
-              </el-radio-group>
+            <el-form-item label="角色" prop="role" v-if="activeTab === 'register'">
+              <div class="role-selection">
+                <el-radio-group v-model="registerForm.role">
+                  <el-radio-button value="user">普通用户</el-radio-button>
+                  <el-radio-button value="manager">单车管理员</el-radio-button>
+                  <el-radio-button value="subway">地铁管理员</el-radio-button>
+                </el-radio-group>
+              </div>
             </el-form-item>
             
             <el-form-item>
@@ -158,7 +161,7 @@ const registerForm = reactive({
   email: '',
   password: '',
   confirmPassword: '',
-  role: 'user' as 'user' | 'manager' // 新增用户类型
+  role: 'user' as 'user' | 'manager' | 'subway' // 新增用户类型
 });
 
 // 注册验证规则
@@ -317,4 +320,4 @@ const handleRegister = () => {
   justify-content: space-between;
   align-items: center;
 }
-</style> 
+</style>   

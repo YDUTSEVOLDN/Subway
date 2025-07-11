@@ -6,42 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>智慧交通监控与调度平台</title>
     
-    <!-- 从本地存储加载高德地图API密钥 -->
-    <script>
-      window.loadAMapAPI = function() {
-        // 尝试从本地存储获取API密钥
-        var savedSettings = localStorage.getItem('mapSettings');
-        var apiKey = 'e5c2b4f4a4b1d3a1f4b2c3d5e1a2b3c4'; // 默认密钥
-        
-        if (savedSettings) {
-          try {
-            var settings = JSON.parse(savedSettings);
-            if (settings.apiKey) {
-              apiKey = settings.apiKey;
-            }
-          } catch (e) {
-            console.error('解析地图设置失败:', e);
-          }
-        }
-        
-        // 动态加载高德地图API，加载更多插件和元素
-        var script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = 'https://webapi.amap.com/maps?v=2.0&key=' + apiKey + 
-                     '&plugin=AMap.Scale,AMap.ToolBar,AMap.MapType,AMap.Geolocation,AMap.Marker,AMap.Autocomplete,AMap.PlaceSearch,AMap.DistrictSearch,AMap.Traffic,AMap.HeatMap,AMap.PolyEditor';
-        document.head.appendChild(script);
-        
-        // 加载UI库
-        var uiScript = document.createElement('script');
-        uiScript.type = 'text/javascript';
-        uiScript.src = 'https://webapi.amap.com/ui/1.1/main.js?v=1.1.1';
-        document.head.appendChild(uiScript);
-        
-        console.log('高德地图API和UI库加载中...');
+    <!-- 高德地图API配置 -->
+    <script type="text/javascript">
+      window._AMapSecurityConfig = {
+        // 从 src/config/amap.ts 导入
       };
-      
-      // 页面加载完成后加载地图API
-      window.addEventListener('load', window.loadAMapAPI);
     </script>
   </head>
   <body>

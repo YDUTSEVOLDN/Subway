@@ -1,16 +1,21 @@
 <template>
-  <div class="sidebar">
+  <div 
+    class="sidebar" 
+    :class="{ 'collapsed': layoutStore.isSidebarCollapsed }"
+    @mouseenter="handleMouseEnter" 
+    @mouseleave="handleMouseLeave"
+  >
     <el-menu
       class="sidebar-menu"
-      :collapse="isCollapsed"
+      :collapse="layoutStore.isSidebarCollapsed"
       router
       :default-active="activeRoute"
-      background-color="#001528"
+      background-color="#111827"
       text-color="#fff"
       active-text-color="#ffd04b"
     >
       <div class="logo-container">
-        <img src="../../assets/logo.svg" alt="Logo" class="logo" v-if="!isCollapsed" />
+        <img src="../../assets/logo.svg" alt="Logo" class="logo" v-if="!layoutStore.isSidebarCollapsed" />
         <img src="../../assets/logo.svg" alt="Logo" class="logo-small" v-else />
       </div>
       
@@ -31,33 +36,13 @@
       </el-menu-item>
       
       <!-- 管理员和共享单车管理者可见的菜单 -->
-      <el-menu-item index="/dispatch" v-if="userStore.isBikeManager || userStore.isAdmin">
+      <el-menu-item index="/dispatch" v-if="userStore.isBikeManager">
         <el-icon><Van /></el-icon>
         <template #title>调度管理</template>
       </el-menu-item>
       
-      <!-- 管理员专属菜单 -->
-      <el-sub-menu index="/admin" v-if="userStore.isAdmin">
-        <template #title>
-          <el-icon><Management /></el-icon>
-          <span>系统管理</span>
-        </template>
-        <el-menu-item index="/admin/users">
-          <el-icon><User /></el-icon>
-          <span>用户管理</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/bikes">
-          <el-icon><Bicycle /></el-icon>
-          <span>单车管理</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/stations">
-          <el-icon><LocationInformation /></el-icon>
-          <span>站点管理</span>
-        </el-menu-item>
-      </el-sub-menu>
-      
-      <!-- 系统设置菜单 -->
-      <el-menu-item index="/settings">
+      <!-- 系统设置菜单 (管理员和普通用户不可见) -->
+      <el-menu-item index="/settings" v-if="!userStore.isAdmin && !userStore.isRegularUser">
         <el-icon><Setting /></el-icon>
         <template #title>系统设置</template>
       </el-menu-item>
@@ -68,11 +53,6 @@
         <template #title>个人中心</template>
       </el-menu-item>
     </el-menu>
-    
-    <div class="collapse-btn" @click="toggleCollapse">
-      <el-icon v-if="isCollapsed"><Expand /></el-icon>
-      <el-icon v-else><Fold /></el-icon>
-    </div>
   </div>
 </template>
 
@@ -85,28 +65,28 @@ import {
   Position, 
   Van, 
   Setting, 
-  Fold, 
-  Expand, 
-  Management,
-  User,
-  Bicycle,
-  LocationInformation,
   UserFilled
 } from '@element-plus/icons-vue';
 import { useUserStore } from '../../stores/userStore';
+import { useLayoutStore } from '../../stores/layoutStore'; // 导入新的 store
 
 const route = useRoute();
-const isCollapsed = ref(false);
 const userStore = useUserStore();
+const layoutStore = useLayoutStore(); // 使用 store
 
 // 当前激活的路由
 const activeRoute = computed(() => {
   return route.path;
 });
 
-// 切换侧边栏折叠状态
-const toggleCollapse = () => {
-  isCollapsed.value = !isCollapsed.value;
+// 鼠标悬停时展开
+const handleMouseEnter = () => {
+  layoutStore.setSidebarCollapsed(false);
+};
+
+// 鼠标移出时折叠
+const handleMouseLeave = () => {
+  layoutStore.setSidebarCollapsed(true);
 };
 </script>
 
@@ -114,7 +94,7 @@ const toggleCollapse = () => {
 .sidebar {
   position: relative;
   height: 100%;
-  background-color: #001528;
+  background-color: #111827;
   transition: width 0.3s;
   width: 220px;
   
@@ -139,7 +119,7 @@ const toggleCollapse = () => {
       justify-content: center;
       align-items: center;
       height: 60px;
-      background-color: #002140;
+      background-color: #1f2937;
       overflow: hidden;
       
       .logo {
@@ -151,23 +131,6 @@ const toggleCollapse = () => {
         height: 32px;
         width: 32px;
       }
-    }
-  }
-  
-  .collapse-btn {
-    position: absolute;
-    bottom: 20px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 32px;
-    color: #fff;
-    cursor: pointer;
-    
-    &:hover {
-      color: #ffd04b;
     }
   }
 }

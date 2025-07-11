@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 
 // 定义用户角色类型
-export type UserRole = 'user' | 'manager' | 'admin' | 'guest';
+export type UserRole = 'user' | 'manager' | 'subway' | 'admin' | 'guest';
 
 // 定义用户类型
 export interface User {
@@ -45,6 +45,7 @@ export const useUserStore = defineStore({
     
     // 检查用户是否是共享单车管理者
     isBikeManager: (state) => state.user?.role === 'manager',
+    isSubwayManager: (state) => state.user?.role === 'subway',
     
     // 检查用户是否是普通用户
     isRegularUser: (state) => state.user?.role === 'user'
@@ -65,20 +66,27 @@ export const useUserStore = defineStore({
         // 根据用户名分配不同角色（仅用于演示）
         if (username.includes('admin')) {
           role = 'admin';
-          permissions = ['view_dashboard', 'view_traffic_data', 'manage_bikes', 'manage_users', 'manage_system'];
+          permissions = ['view_dashboard', 'view_traffic_data', 'manage_users'];
         } else if (username.includes('manager')) {
-          role = 'manager';
-          permissions = ['view_dashboard', 'view_traffic_data', 'manage_bikes'];
+          role = username.includes('subway') ? 'subway' : 'manager';
+          permissions = role === 'manager'
+            ? ['view_dashboard', 'view_traffic_data', 'manage_bikes']
+            : ['view_dashboard', 'view_traffic_data', 'manage_subway'];
         }
         
         // 假设登录成功
         const token = 'mock_token_' + Date.now();
+        // 获取本地存储的用户信息以保留头像设置
+        const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+        const avatar = storedUser?.avatar || '/default-avatar.svg';
+
         const user = {
           id: Math.random().toString(36).substring(2, 10),
           username,
+          email: storedUser?.email,
           role,
           permissions,
-          avatar: '/default-avatar.svg'
+          avatar: avatar
         };
         
         // 更新状态
@@ -104,13 +112,17 @@ export const useUserStore = defineStore({
         
         // 假设注册成功，自动登录
         const token = 'mock_token_' + Date.now();
+        // 获取本地存储的用户信息以保留头像设置
+        const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+        const avatar = storedUser?.avatar || '/default-avatar.svg';
+
         const user = {
           id: Math.random().toString(36).substring(2, 10),
           username,
           email,
           role,
           permissions,
-          avatar: '/default-avatar.svg'
+          avatar: avatar
         };
         
         // 更新状态
@@ -157,15 +169,15 @@ export const useUserStore = defineStore({
     },
     
     // 更改用户角色
-    changeUserRole(newRole: UserRole) {
-      if (this.user) {
+    changeUserRole(userId: string, newRole: UserRole) {
+      if (this.user && this.user.id === userId) {
         // 根据角色设置权限
         let permissions: string[] = ['view_dashboard', 'view_traffic_data'];
         
         if (newRole === 'manager') {
           permissions.push('manage_bikes');
         } else if (newRole === 'admin') {
-          permissions = ['view_dashboard', 'view_traffic_data', 'manage_bikes', 'manage_users', 'manage_system'];
+          permissions = ['view_dashboard', 'view_traffic_data', 'manage_users'];
         }
         
         this.user = { 
@@ -178,4 +190,4 @@ export const useUserStore = defineStore({
       }
     }
   }
-}); 
+});

@@ -38,8 +38,8 @@
         
         <el-form-item label="地图类型">
           <el-radio-group v-model="mapSettings.mapType">
-            <el-radio-button label="normal">普通地图</el-radio-button>
-            <el-radio-button label="satellite">卫星地图</el-radio-button>
+            <el-radio-button value="normal">普通地图</el-radio-button>
+            <el-radio-button value="satellite">卫星地图</el-radio-button>
           </el-radio-group>
         </el-form-item>
         
