@@ -13,13 +13,13 @@ public class StationBikeDto {
     private String stationName;
 
     @Schema(description = "单车", example = "123456", required = true)
-    private  Long numBer;//name identically
+    private  Long number;//name identically
 
 
 
     public StationBikeDto(String stationName, Long number) {
         this.stationName=stationName;
-        this.numBer=number;
+        this.number=number;
     }
 
     public String getStationName() {
@@ -30,11 +30,11 @@ public class StationBikeDto {
         this.stationName = stationName;
     }
 
-    public Long getNumBer() {
-        return numBer;
+    public Long getNumber() {
+        return number;
     }
 
-    public void setNumBer(Long numBer) {
-        this.numBer = numBer;
+    public void setNumber(Long number) {
+        this.number = number;
     }
 }

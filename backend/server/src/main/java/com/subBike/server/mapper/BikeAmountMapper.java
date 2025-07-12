@@ -20,7 +20,7 @@ import java.util.List;
 @Repository
 public interface BikeAmountMapper extends JpaRepository<SubAmount, SubAmountID> {
 
-    @Query("SELECT new com.subBike.server.entity.dto.StationBikeDto(b.station, b.numBer)" +
+    @Query("SELECT new com.subBike.server.entity.dto.StationBikeDto(b.station, b.number)" +
             "FROM BikeAmount b " +
             "WHERE b.date = :date "
             )
@@ -30,15 +30,15 @@ public interface BikeAmountMapper extends JpaRepository<SubAmount, SubAmountID> 
     List<StationBikeDto> findTotal(@Param("date") Date date);
 
 
-    @Query("SELECT new com.subBike.server.entity.dto.StationBikeDto(b.station, b.numBer)" +
+    @Query("SELECT new com.subBike.server.entity.dto.StationBikeDto(b.station, b.number)" +
             "FROM BikeAmount b " +
             "WHERE b.date = :date " +
-            "ORDER BY b.numBer DESC " +
+            "ORDER BY b.number DESC " +
             "LIMIT 10")
 
     List<StationBikeDto> findByDate(@Param("date") Date date);
 
-    @Query("SELECT new com.subBike.server.entity.dto.DateBikeDto(b.date,b.numBer)" +
+    @Query("SELECT new com.subBike.server.entity.dto.DateBikeDto(b.date,b.number)" +
             "FROM BikeAmount b " +
             "WHERE b.station = :station ")
 

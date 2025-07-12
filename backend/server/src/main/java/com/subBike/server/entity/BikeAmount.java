@@ -16,12 +16,12 @@ public class BikeAmount {
     String station;
     @Id
     Date date;
-    Long numBer;
+    Long number;
 
-    public BikeAmount(String station, Date date, Long numBer) {
+    public BikeAmount(String station, Date date, Long number) {
         this.station = station;
         this.date = date;
-        this.numBer = numBer;
+        this.number = number;
     }
 
     public BikeAmount() {
@@ -43,11 +43,11 @@ public class BikeAmount {
         this.date = date;
     }
 
-    public Long getNumBer() {
-        return numBer;
+    public Long getNumber() {
+        return number;
     }
 
-    public void setNumBer(Long numBer) {
-        this.numBer = numBer;
+    public void setNumber(Long numBer) {
+        this.number = numBer;
     }
 }
