@@ -1,7 +1,5 @@
 package com.subBike.server.mapper;
-import com.subBike.server.entity.dto.AmountDto;
-import com.subBike.server.entity.dto.DateAmountDto;
-import com.subBike.server.entity.dto.TimeAmountDto;
+import com.subBike.server.entity.dto.*;
 import com.subBike.server.entity.id.SubAmountID;
 
 import com.subBike.server.entity.SubAmount;
@@ -22,46 +20,32 @@ import java.util.List;
 @Repository
 public interface BikeAmountMapper extends JpaRepository<SubAmount, SubAmountID> {
 
-    @Query("SELECT new com.subBike.server.entity.dto.AmountDto(" +
-            "s.station, SUM(s.inNum), SUM(s.outNum)) " +
-            "FROM SubAmount s " +
-            "WHERE s.date = :date " +
-            "GROUP BY s.station " +
-            "ORDER BY SUM(s.inNum + s.outNum) DESC " +
+    @Query("SELECT new com.subBike.server.entity.dto.StationBikeDto(b.station, b.numBer)" +
+            "FROM BikeAmount b " +
+            "WHERE b.date = :date "
+            )
+
+//    select station,num_ber from bike_amount where date='2019-05-06';
+//    select date,num_ber from bike_amount where station='西直门';
+    List<StationBikeDto> findTotal(@Param("date") Date date);
+
+
+    @Query("SELECT new com.subBike.server.entity.dto.StationBikeDto(b.station, b.numBer)" +
+            "FROM BikeAmount b " +
+            "WHERE b.date = :date " +
+            "ORDER BY b.numBer DESC " +
             "LIMIT 10")
-    List<AmountDto> findByDate(@Param("date") Date date);
 
-    @Query("SELECT new com.subBike.server.entity.dto.DateAmountDto(" +
-            "s.date, SUM(s.inNum), SUM(s.outNum)) " +
-            "FROM SubAmount s " +
-            "GROUP BY s.date")
-    List<DateAmountDto> findTotal();
+    List<StationBikeDto> findByDate(@Param("date") Date date);
 
-    // 方案1：使用数据库函数（适用于 MySQL）
-    @Query("SELECT new com.subBike.server.entity.dto.DateAmountDto(s.date, SUM(s.inNum), SUM(s.outNum)) " +
-            "FROM SubAmount s " +
-            "WHERE s.station = :station " +
-            "AND s.date BETWEEN :startDate AND :endDate " +
-            "GROUP BY s.date " +
-            "ORDER BY s.date")
-    List<DateAmountDto> getWeeklyTotals(
-            @Param("station") String station,
-            @Param("startDate") Date startDate,
-            @Param("endDate") Date endDate);
+    @Query("SELECT new com.subBike.server.entity.dto.DateBikeDto(b.date,b.numBer)" +
+            "FROM BikeAmount b " +
+            "WHERE b.station = :station ")
 
-    @Query("SELECT new com.subBike.server.entity.dto.AmountDto(" +
-            "s.station, SUM(s.inNum), SUM(s.outNum)) " +
-            "FROM SubAmount s " +
-            "WHERE s.date = :date " +
-            "GROUP BY s.station")
-    List<AmountDto> getMap(@Param("date") Date date);
+    List<DateBikeDto> findByStation(@Param("station") String station);
 
-    @Query("SELECT new com.subBike.server.entity.dto.TimeAmountDto(" +
-            "s.time, SUM(s.inNum), SUM(s.outNum)) " +
-            "FROM SubAmount s " +
-            "WHERE s.date = :date " +
-            "GROUP BY s.time")
-    List<TimeAmountDto> getTrend(@Param("date") Date date);
+
+
 }
 
 
