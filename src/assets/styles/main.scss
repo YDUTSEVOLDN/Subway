@@ -1,0 +1,157 @@
+// 变量定义
+$primary-color: #409eff;
+$success-color: #67c23a;
+$warning-color: #e6a23c;
+$danger-color: #f56c6c;
+$info-color: #909399;
+
+$bg-color: #f5f7fa;
+$text-color: #303133;
+$text-color-light: #606266;
+$text-color-lighter: #909399;
+
+$border-color: #dcdfe6;
+$border-color-light: #e4e7ed;
+
+// 全局样式
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: $text-color;
+  background-color: $bg-color;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+#app {
+  height: 100%;
+  width: 100%;
+}
+
+// 通用动画
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(20px);
+  opacity: 0;
+}
+
+// 页面切换动画
+.page-enter-active,
+.page-leave-active {
+  transition: all 0.3s;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+// 卡片样式
+.card {
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  padding: 16px;
+}
+
+// 布局类
+.flex {
+  display: flex;
+  
+  &.column {
+    flex-direction: column;
+  }
+  
+  &.center {
+    justify-content: center;
+    align-items: center;
+  }
+  
+  &.space-between {
+    justify-content: space-between;
+  }
+}
+
+// 地图相关样式
+.map-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+  position: relative;
+}
+
+// 状态标签样式
+.status-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  
+  &.shortage {
+    background-color: rgba($danger-color, 0.1);
+    color: $danger-color;
+  }
+  
+  &.balanced {
+    background-color: rgba($success-color, 0.1);
+    color: $success-color;
+  }
+  
+  &.surplus {
+    background-color: rgba($info-color, 0.1);
+    color: $info-color;
+  }
+}
+
+// 进度条样式
+.progress-bar {
+  height: 6px;
+  background-color: $border-color-light;
+  border-radius: 3px;
+  margin: 8px 0;
+  overflow: hidden;
+  
+  .progress {
+    height: 100%;
+    transition: width 0.3s ease;
+    
+    &.low {
+      background-color: $danger-color;
+    }
+    
+    &.medium {
+      background-color: $warning-color;
+    }
+    
+    &.high {
+      background-color: $success-color;
+    }
+  }
+} 

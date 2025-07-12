@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32px" height="32px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>默认头像</title>
+    <g id="头像" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle id="背景" fill="#DDDDDD" cx="16" cy="16" r="16"></circle>
+        <path d="M16,8 C18.2091,8 20,9.79086 20,12 C20,14.2091 18.2091,16 16,16 C13.7909,16 12,14.2091 12,12 C12,9.79086 13.7909,8 16,8 Z M16,17 C20.4183,17 24,19.6863 24,23 L24,24 L8,24 L8,23 C8,19.6863 11.5817,17 16,17 Z" id="用户" fill="#FFFFFF"></path>
+    </g>
+</svg> 
