@@ -20,9 +20,9 @@
             <el-dropdown-item command="profile">
               <el-icon><User /></el-icon>个人资料
             </el-dropdown-item>
-            <el-dropdown-item command="settings" v-if="!userStore.isAdmin && !userStore.isRegularUser">
+            <!-- <el-dropdown-item command="settings" v-if="userStore.userRole === 'ROLE_ADMIN'">
               <el-icon><Setting /></el-icon>系统设置
-            </el-dropdown-item>
+            </el-dropdown-item> -->
             <el-dropdown-item command="identity" v-if="userStore.isAdmin">
               <el-icon><Management /></el-icon>角色管理
             </el-dropdown-item>
@@ -71,9 +71,9 @@ const handleCommand = (command: string) => {
     case 'profile':
       router.push('/profile');
       break;
-    case 'settings':
-      router.push('/settings');
-      break;
+    // case 'settings':
+    //   router.push('/settings');
+    //   break;
     case 'identity':
       router.push('/identity');
       break;
