@@ -2,13 +2,11 @@ spring:
 
   autoconfigure:
     exclude:
-      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
-      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost/subBike?setUnicode=true&characterEncoding=utf8&useAffectedRows=true
+    url: jdbc:mysql://localhost/subway?setUnicode=true&characterEncoding=utf8&useAffectedRows=true
     username: root
-    password: Jnh@9372
+    password: 123456
   jpa:
     database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate:

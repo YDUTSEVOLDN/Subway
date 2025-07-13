@@ -145,13 +145,13 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>17</source>
+                    <target>17</target>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.springframework.boot</groupId>
                             <artifactId>spring-boot-configuration-processor</artifactId>
-                            <!-- 版本由 Spring Boot Parent 管理，无需手动指定 -->
+                            <version>${spring-boot.version}</version>
                         </path>
                         <path>
                             <groupId>org.projectlombok</groupId>

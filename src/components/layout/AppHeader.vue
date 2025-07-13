@@ -20,8 +20,11 @@
             <el-dropdown-item command="profile">
               <el-icon><User /></el-icon>个人资料
             </el-dropdown-item>
-            <el-dropdown-item command="settings">
+            <!-- <el-dropdown-item command="settings" v-if="userStore.userRole === 'ROLE_ADMIN'">
               <el-icon><Setting /></el-icon>系统设置
+            </el-dropdown-item> -->
+            <el-dropdown-item command="identity" v-if="userStore.isAdmin">
+              <el-icon><Management /></el-icon>角色管理
             </el-dropdown-item>
             <el-dropdown-item divided command="logout">
               <el-icon><SwitchButton /></el-icon>退出登录
@@ -37,7 +40,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessageBox } from 'element-plus';
-import { User, Setting, SwitchButton } from '@element-plus/icons-vue';
+import { User, Setting, SwitchButton, Management } from '@element-plus/icons-vue';
 import { useUserStore } from '../../stores/userStore';
 
 const userStore = useUserStore();
@@ -68,8 +71,11 @@ const handleCommand = (command: string) => {
     case 'profile':
       router.push('/profile');
       break;
-    case 'settings':
-      router.push('/settings');
+    // case 'settings':
+    //   router.push('/settings');
+    //   break;
+    case 'identity':
+      router.push('/identity');
       break;
     case 'logout':
       confirmLogout();

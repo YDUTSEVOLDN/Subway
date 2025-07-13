@@ -10,9 +10,10 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.1.0",
-    "axios": "^1.6.2",
+    "axios": "^1.10.0",
     "echarts": "^5.4.3",
-    "element-plus": "^2.4.3",
+    "element-plus": "^2.10.3",
+    "papaparse": "^5.5.3",
     "pinia": "^2.1.7",
     "sass": "^1.69.5",
     "vue": "^3.3.11",
@@ -25,6 +26,7 @@
     "unplugin-auto-import": "^0.17.8",
     "unplugin-vue-components": "^0.25.2",
     "vite": "^5.0.8",
+    "vitest": "^3.2.4",
     "vue-tsc": "^2.2.10"
   }
 }
