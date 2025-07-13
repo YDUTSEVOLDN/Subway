@@ -82,6 +82,19 @@
             <optional>true</optional>
         </dependency>
 
+        <dependency>
+            <groupId>com.microsoft.onnxruntime</groupId>
+            <artifactId>onnxruntime</artifactId>
+            <version>1.16.3</version>
+        </dependency>
+
+        <!-- 可选：GPU支持（如果需要CUDA加速） -->
+        <dependency>
+            <groupId>com.microsoft.onnxruntime</groupId>
+            <artifactId>onnxruntime_gpu</artifactId>
+            <version>1.16.3</version>
+        </dependency>
+
 
         <!-- Maven 依赖 -->
         <dependency>
@@ -162,6 +175,7 @@
                 </configuration>
             </plugin>
         </plugins>
+
     </build>
 
 </project>
