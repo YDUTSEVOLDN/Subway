@@ -4,9 +4,9 @@ spring:
     exclude:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost/subway?setUnicode=true&characterEncoding=utf8&useAffectedRows=true
-    username: root
-    password: 123456
+    url: jdbc:mysql://39.96.171.100/subbike?allowPublicKeyRetrieval=true&setUnicode=true&characterEncoding=utf8&useAffectedRows=true
+    username: admin
+    password: password
   jpa:
     database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate:
