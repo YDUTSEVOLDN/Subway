@@ -6,7 +6,10 @@ import {
   getBikeSupplyDemand, 
   generateDispatchPlans,
   generateDispatchRoute,
-  mockApiRequest
+  mockApiRequest,
+  generateStationRanking,
+  generateSystemTrend,
+  generateStationComparison,
 } from './mockData';
 
 // 创建axios实例
@@ -79,5 +82,37 @@ export default {
   executeDispatch(planId: string) {
     // 实际项目中应该是: return api.post(`/dispatch/execute/${planId}`);
     return mockApiRequest({ success: true, planId });
+  },
+
+  /**
+   * 获取站点客流排名
+   * @param metric - 排名依据 (inflow, outflow, total)
+   * @param limit - 返回数量
+   */
+  getStationRanking(metric: string, limit = 10) {
+    // 真实请求: return api.get('/ranking/stations', { params: { metric, limit } });
+    return mockApiRequest(generateStationRanking(metric, limit));
+  },
+
+  /**
+   * 获取整个地铁系统的客流趋势
+   * @param granularity - 时间粒度 (daily, weekly)
+   * @param range - 时间范围 (last7days, last30days)
+   */
+  getSystemTrend(granularity: string, range: string) {
+    // 真实请求: return api.get('/trends/system', { params: { granularity, range } });
+    return mockApiRequest(generateSystemTrend(granularity, range));
+  },
+
+  /**
+   * 获取多个站点的客流对比数据
+   * @param stationIds - 站点 ID 数组
+   * @param metric - 统计指标
+   * @param range - 时间范围
+   */
+  getStationComparison(stationIds: string[], metric: string, range: string) {
+    const ids = stationIds.join(',');
+    // 真实请求: return api.get('/trends/stations/compare', { params: { stationIds: ids, metric, range } });
+    return mockApiRequest(generateStationComparison(stationIds, metric, range));
   }
 }; 

@@ -1,54 +1,54 @@
 <template>
   <div class="path-visualizer-container">
-    <div ref="pathContainer" class="path-container"></div>
+    <div ref="pathContainer" class="path-container">
+    </div>
     
-    <!-- 路径详情侧边栏 -->
-    <el-card v-if="showDetails" class="path-details">
-      <template #header>
-        <div class="details-header">
-          <span>路径详情</span>
-          <el-button type="text" @click="showDetails = false">
-            <el-icon><Close /></el-icon>
-          </el-button>
-        </div>
-      </template>
-      
-      <div v-if="currentPath" class="details-content">
-        <el-descriptions :column="1" border size="small">
-          <el-descriptions-item label="起点站">{{ currentPath.source?.name || '未知起点' }}</el-descriptions-item>
-          <el-descriptions-item label="终点站">{{ currentPath.target?.name || '未知终点' }}</el-descriptions-item>
-          <el-descriptions-item label="路径长度">{{ getPathDistance() }} 公里</el-descriptions-item>
-          <el-descriptions-item label="预计用时">{{ getPathDuration() }} 分钟</el-descriptions-item>
-          <el-descriptions-item label="调度单车数">{{ currentPath.bikeCount || 0 }} 辆</el-descriptions-item>
-        </el-descriptions>
+    <!-- 路徑信息浮動面板 -->
+    <div v-if="currentPath" class="path-info-panel">
+      <el-card class="path-info-card">
+        <template #header>
+          <div class="info-header">
+            <span>路徑信息</span>
+          </div>
+        </template>
         
-        <div class="path-waypoints">
-          <h4>途经点 ({{ currentPath.path?.length || 0 }} 个)</h4>
-          <el-timeline>
-            <el-timeline-item
-              v-for="(point, index) in currentPath?.path || []" 
-              :key="index"
-              :type="getPointType(index)"
-              :color="getPointColor(index)"
-            >
-              <p class="waypoint-info">
-                {{ index === 0 ? '起点' : (index === (currentPath?.path?.length || 0) - 1 ? '终点' : `途经点 ${index}`) }}
-                <span class="coordinates">
-                  {{ formatCoordinates(point) }}
-                </span>
-              </p>
-            </el-timeline-item>
-          </el-timeline>
+        <div class="info-content">
+          <div class="info-item">
+            <span class="label">起點:</span>
+            <span class="value">{{ currentPath.source?.name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">終點:</span>
+            <span class="value">{{ currentPath.target?.name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">距離:</span>
+            <span class="value">{{ getPathDistance() }} 公里</span>
+          </div>
+          <div class="info-item">
+            <span class="label">時間:</span>
+            <span class="value">{{ getPathDuration() }} 分鐘</span>
+          </div>
+          <div v-if="currentPath.tolls && currentPath.tolls > 0" class="info-item">
+            <span class="label">收費:</span>
+            <span class="value">{{ currentPath.tolls }} 元</span>
+          </div>
         </div>
-      </div>
-    </el-card>
+      </el-card>
+    </div>
+    
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { Close } from '@element-plus/icons-vue';
-import type { Station } from '../../stores/mapStore';
+
+// 定义一个更通用的路径节点类型，而不是强依赖于Station
+interface PathNode {
+  name: string;
+}
 
 interface PathPoint {
   lng: number;
@@ -58,11 +58,16 @@ interface PathPoint {
 interface PathData {
   id?: string;
   name?: string;
-  source?: Station;
-  target?: Station;
+  source?: PathNode; // 使用通用类型
+  target?: PathNode; // 使用通用类型
   path?: PathPoint[];
   bikeCount?: number;
   color?: string;
+  distance?: number;
+  duration?: number;
+  steps?: any[];
+  tolls?: number;
+  tollDistance?: number;
 }
 
 // 定义组件属性
@@ -77,7 +82,6 @@ const emit = defineEmits(['path-click']);
 
 // 内部状态
 const pathContainer = ref<HTMLElement | null>(null);
-const showDetails = ref(false);
 const currentPath = ref<PathData | null>(null);
 const pathOverlays = ref<any[]>([]);
 const pathMarkers = ref<any[]>([]);
@@ -103,36 +107,24 @@ watch(() => props.path, (newPath) => {
   }
 }, { deep: true });
 
+// 監聽地圖實例變化
+watch(() => props.mapInstance, (newMapInstance) => {
+  if (newMapInstance && currentPath.value) {
+    // 地圖實例可用且有路徑數據時，重新繪製路徑
+    drawPath();
+  }
+}, { immediate: true });
+
 // 计算路径距离（公里）
 const getPathDistance = () => {
-  if (!currentPath.value?.path || currentPath.value.path.length < 2) return '0.00';
-  
-  let totalDistance = 0;
-  const path = currentPath.value.path;
-  
-  for (let i = 1; i < path.length; i++) {
-    if (window.AMap) {
-      // 使用高德地图的距离计算
-      const p1 = [path[i-1].lng, path[i-1].lat];
-      const p2 = [path[i].lng, path[i].lat];
-      totalDistance += window.AMap.GeometryUtil ? window.AMap.GeometryUtil.distance(p1, p2) : 0;
-    } else {
-      // 简化的距离计算（经纬度直接相减，不是实际距离）
-      const dx = path[i].lng - path[i-1].lng;
-      const dy = path[i].lat - path[i-1].lat;
-      totalDistance += Math.sqrt(dx * dx + dy * dy) * 111.12; // 大约转换为km
-    }
-  }
-  
-  return (totalDistance / 1000).toFixed(2);
+  if (!currentPath.value?.distance) return '0.00';
+  return currentPath.value.distance.toFixed(2);
 };
 
 // 计算路径预计用时（分钟）
 const getPathDuration = () => {
-  const distance = parseFloat(getPathDistance());
-  // 假设平均速度为 20 km/h
-  const hours = distance / 20;
-  return Math.ceil(hours * 60);
+  if (!currentPath.value?.duration) return 0;
+  return currentPath.value.duration;
 };
 
 // 获取点位类型
@@ -177,7 +169,14 @@ const clearPath = () => {
 
 // 绘制路径
 const drawPath = () => {
-  if (!map.value || !currentPath.value?.path || currentPath.value.path.length < 2) return;
+  if (!map.value || !currentPath.value?.path || currentPath.value.path.length < 2) {
+    console.log('無法繪製路徑:', {
+      hasMap: !!map.value,
+      hasPath: !!currentPath.value?.path,
+      pathLength: currentPath.value?.path?.length || 0
+    });
+    return;
+  }
   
   // 清除旧路径
   clearPath();
@@ -191,35 +190,59 @@ const drawPath = () => {
       const polyline = new window.AMap.Polyline({
         path: points,
         strokeColor: currentPath.value.color || '#409EFF',
-        strokeWeight: 5,
-        strokeOpacity: 0.8
+        strokeWeight: 14, // 进一步加粗
+        strokeOpacity: 0.9,
+        strokeStyle: 'solid',
+        lineJoin: 'round',
+        lineCap: 'round'
       });
       
       // 添加路径到地图
       map.value.add(polyline);
       pathOverlays.value.push(polyline);
       
-      // 添加起点和终点标记
-      const startIcon = new window.AMap.Icon({
-        size: new window.AMap.Size(32, 32),
-        image: '/start-icon.png', // 需要在public中添加此图标
-        imageOffset: new window.AMap.Size(0, 0),
-        imageSize: new window.AMap.Size(32, 32),
-        anchor: new window.AMap.Size(16, 32)
+      // 添加方向箭头
+      const arrowPolyline = new window.AMap.Polyline({
+        path: points,
+        strokeColor: '#FF6B35',
+        strokeWeight: 3,
+        strokeOpacity: 0.6,
+        strokeStyle: 'dashed',
+        lineJoin: 'round',
+        lineCap: 'round'
       });
       
-      const endIcon = new window.AMap.Icon({
-        size: new window.AMap.Size(32, 32),
-        image: '/end-icon.png', // 需要在public中添加此图标
-        imageOffset: new window.AMap.Size(0, 0),
-        imageSize: new window.AMap.Size(32, 32),
-        anchor: new window.AMap.Size(16, 32)
-      });
+      map.value.add(arrowPolyline);
+      pathOverlays.value.push(arrowPolyline);
+      
+      // 在路徑中間添加方向標記
+      if (points.length > 2) {
+        const midIndex = Math.floor(points.length / 2);
+        const midPoint = points[midIndex];
+        
+        const directionMarker = new window.AMap.Marker({
+          position: midPoint,
+          content: '<div style="background: #FF6B35; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">→</div>',
+          offset: new window.AMap.Pixel(-10, -10)
+        });
+        
+        map.value.add(directionMarker);
+        pathMarkers.value.push(directionMarker);
+      }
       
       // 起点标记
       const startMarker = new window.AMap.Marker({
         position: points[0],
-        icon: startIcon
+        label: {
+          content: '起点',
+          direction: 'top',
+          offset: [0, -10]
+        },
+        icon: new window.AMap.Icon({
+          size: new window.AMap.Size(25, 34),
+          image: 'https://webapi.amap.com/theme/v1.3/markers/n/start.png',
+          imageSize: new window.AMap.Size(25, 34)
+        })
       });
       map.value.add(startMarker);
       pathMarkers.value.push(startMarker);
@@ -227,26 +250,78 @@ const drawPath = () => {
       // 终点标记
       const endMarker = new window.AMap.Marker({
         position: points[points.length - 1],
-        icon: endIcon
+        label: {
+          content: '终点',
+          direction: 'top',
+          offset: [0, -10]
+        },
+        icon: new window.AMap.Icon({
+          size: new window.AMap.Size(25, 34),
+          image: 'https://webapi.amap.com/theme/v1.3/markers/n/end.png',
+          imageSize: new window.AMap.Size(25, 34)
+        })
       });
       map.value.add(endMarker);
       pathMarkers.value.push(endMarker);
       
       // 自动调整视野
-      if (props.autoFit) {
-        map.value.setFitView(points);
+      if (props.autoFit && points.length > 0) {
+        try {
+          // 使用 setBounds 而不是 setFitView，並傳遞正確的邊界對象
+          const bounds = new window.AMap.Bounds(
+            [Math.min(...points.map(p => p.getLng())), Math.min(...points.map(p => p.getLat()))],
+            [Math.max(...points.map(p => p.getLng())), Math.max(...points.map(p => p.getLat()))]
+          );
+          map.value.setBounds(bounds, true, [50, 50, 50, 50]);
+        } catch (error) {
+          console.warn('自動調整視野失敗，使用備用方案:', error);
+          // 備用方案：使用起點和終點
+          if (points.length >= 2) {
+            const center = [
+              (points[0].getLng() + points[points.length - 1].getLng()) / 2,
+              (points[0].getLat() + points[points.length - 1].getLat()) / 2
+            ];
+            map.value.setCenter(center);
+            map.value.setZoom(14);
+          }
+        }
       }
       
-      // 添加点击事件
-      polyline.on('click', () => {
-        showDetails.value = true;
-        emit('path-click', currentPath.value);
-      });
+      console.log('路徑繪製成功，路徑點數量:', points.length);
+      
+      // 顯示成功提示
+      if (window.AMap && window.AMap.InfoWindow) {
+        const infoWindow = new window.AMap.InfoWindow({
+          content: `
+            <div style="padding: 10px; text-align: center;">
+              <h4 style="margin: 0 0 8px 0; color: #67C23A;">✓ 路径规划成功</h4>
+              <p style="margin: 0; color: #606266; font-size: 12px;">
+                路径已在地图上显示
+              </p>
+            </div>
+          `,
+          offset: new window.AMap.Pixel(0, -30),
+          closeWhenClickMap: true
+        });
+        
+        // 在路徑中間顯示提示
+        if (points.length > 2) {
+          const midIndex = Math.floor(points.length / 2);
+          infoWindow.open(map.value, points[midIndex]);
+          
+          // 3秒後自動關閉
+          setTimeout(() => {
+            infoWindow.close();
+          }, 3000);
+        }
+      }
+      
+
     } else {
       console.log('AMap API not available, cannot draw path');
     }
   } catch (error) {
-    console.error('绘制路径失败:', error);
+    console.error('繪製路徑失敗:', error);
   }
 };
 
@@ -265,9 +340,6 @@ onUnmounted(() => {
 
 // 对外暴露方法
 defineExpose({
-  showPathDetails: () => { showDetails.value = true; },
-  hidePathDetails: () => { showDetails.value = false; },
-  togglePathDetails: () => { showDetails.value = !showDetails.value; },
   drawPath,
   clearPath
 });
@@ -282,45 +354,89 @@ defineExpose({
   .path-container {
     width: 100%;
     height: 100%;
+    position: relative; /* 確保子元素的絕對定位相對於此容器 */
   }
-  
-  .path-details {
+
+
+
+  .path-info-panel {
     position: absolute;
-    top: 10px;
+    top: 70px;
     right: 10px;
-    width: 300px;
-    max-height: calc(100% - 20px);
-    overflow-y: auto;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
     z-index: 1000;
-    
-    .details-header {
+    width: 300px;
+    max-height: calc(100% - 90px);
+    overflow-y: auto;
+    box-shadow: 0 6px 20px 0 rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .path-info-card {
+    .info-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      font-weight: 600;
+      color: #303133;
+      border-bottom: 1px solid #f0f0f0;
+      padding-bottom: 8px;
     }
-    
-    .details-content {
+
+    .info-content {
       font-size: 14px;
-    }
-    
-    .path-waypoints {
-      margin-top: 16px;
+      padding: 8px 0;
       
-      h4 {
+      .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 12px;
-      }
-      
-      .waypoint-info {
-        margin: 0;
+        padding: 8px 0;
+        border-bottom: 1px solid #f5f5f5;
+        transition: background-color 0.2s ease;
         
-        .coordinates {
-          font-size: 12px;
-          color: #909399;
-          margin-left: 8px;
+        &:last-child {
+          border-bottom: none;
+          margin-bottom: 0;
+        }
+        
+        &:hover {
+          background-color: #f8f9fa;
+          border-radius: 4px;
+          padding-left: 8px;
+          padding-right: 8px;
+        }
+        
+        .label {
+          font-weight: 600;
+          color: #606266;
+          display: flex;
+          align-items: center;
+          
+          &::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background-color: #409EFF;
+            border-radius: 50%;
+            margin-right: 8px;
+          }
+        }
+        
+        .value {
+          font-weight: 500;
+          color: #303133;
+          text-align: right;
+          max-width: 60%;
+          word-break: break-word;
         }
       }
     }
   }
+  
+
 }
 </style> 

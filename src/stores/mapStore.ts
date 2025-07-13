@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia';
+import subwayLinesData from '@/assets/subway-lines.json';
+import type { PathPlanningResult } from '../types/path';
 
 // 定义站点类型
 export interface Station {
@@ -32,6 +34,21 @@ export interface TrafficData {
   outFlow: number;
 }
 
+// 增加 SavedPathData 接口定義
+export interface SavedPathData extends PathPlanningResult {
+  id: string;
+  name: string;
+  source: Station;
+  target: Station;
+  bikeCount: number;
+  options: any; // 这里的 any 可以根据 PathPlanningOptions 进一步细化
+  scheduleTime?: string;
+  priority?: number;
+  note?: string;
+  color?: string;
+  status?: 'pending' | 'in-progress' | 'completed';
+}
+
 export const useMapStore = defineStore({
   id: 'map',
   
@@ -45,6 +62,8 @@ export const useMapStore = defineStore({
     currentTime: new Date(),
     predictionData: [] as TrafficData[],
     trafficLayer: null as any, // 添加路况图层
+    paths: [] as SavedPathData[], // 新增：用於保存的路徑規劃
+    selectedDate: '', // 新增：用于存储选中的日期
     
     // 调度方案相关
     dispatchPlans: [] as {
@@ -55,7 +74,10 @@ export const useMapStore = defineStore({
       bikeCount: number;
       status: 'pending' | 'executing' | 'completed';
       path: {lng: number, lat: number}[];
-    }[]
+    }[],
+    subwayLines: [] as any[],
+    heatmapData: [] as { lng: number; lat: number; count: number }[],
+    highlightedLines: new Set<string>(), // 新增：用于存储高亮线路的名称
   }),
   
   getters: {
@@ -108,7 +130,8 @@ export const useMapStore = defineStore({
       if (ratio <= 1.2) return 'success';
       if (ratio <= 2) return 'info';
       return 'warning';
-    }
+    },
+    getHeatmapData: (state) => state.heatmapData,
   },
   
   actions: {
@@ -117,46 +140,91 @@ export const useMapStore = defineStore({
       this.mapInstance = map;
     },
     
-    // 加载站点数据
-    loadStations() {
-      // 模拟异步加载
-      return new Promise<void>((resolve) => {
-        setTimeout(() => {
-          this.stations = [
-            {
-              id: 'S001',
-              name: '西二旗站',
-              lines: ['13号线', '昌平线'],
-              entrances: 4,
-              position: { lng: 116.307, lat: 40.052 }
-            },
-            {
-              id: 'S002',
-              name: '知春路站',
-              lines: ['13号线', '10号线'],
-              entrances: 6,
-              position: { lng: 116.344, lat: 39.978 }
-            },
-            {
-              id: 'S003',
-              name: '五道口站',
-              lines: ['13号线'],
-              entrances: 3,
-              position: { lng: 116.339, lat: 39.993 }
-            },
-            {
-              id: 'S004',
-              name: '中关村站',
-              lines: ['4号线'],
-              entrances: 4,
-              position: { lng: 116.318, lat: 39.984 }
-            }
-          ];
-          
-          console.log('站点数据已加载:', this.stations);
-          resolve();
-        }, 100); // 减少延迟时间
+    findStationByName(name: string): Station | undefined {
+      return this.stations.find(station => station.name === name);
+    },
+
+    findStationById(id: string): Station | undefined {
+      return this.stations.find(station => station.id === id);
+    },
+
+    async fetchStations() {
+      if (this.stations.length === 0) {
+        await this.loadSubwayData();
+      }
+    },
+
+    // 新增：设置高亮线路
+    setHighlightedLines(lines: string[]) {
+      this.highlightedLines = new Set(lines);
+    },
+
+    async loadSubwayData() {
+      // 从导入的 JSON 文件中处理数据
+      const allStations = new Map<string, Station>();
+      
+      this.subwayLines = subwayLinesData.map(line => {
+        line.stations.forEach(stationData => {
+          const stationKey = `${stationData.coord[0]}-${stationData.coord[1]}`;
+          if (!allStations.has(stationKey)) {
+            allStations.set(stationKey, {
+              id: stationKey,
+              name: stationData.name,
+              position: { lng: stationData.coord[0], lat: stationData.coord[1] },
+              lines: [],
+              entrances: 0, // 原始数据中没有入口信息，暂设为0
+            });
+          }
+          const station = allStations.get(stationKey)!;
+          if (!station.lines.includes(line.name)) {
+            station.lines.push(line.name);
+          }
+        });
+        
+        return {
+          name: line.name,
+          color: line.color,
+          path: line.stations.map(s => s.coord),
+        };
       });
+
+      this.stations = Array.from(allStations.values());
+      
+      console.log('完整的地铁线路数据已加载:', this.subwayLines);
+      console.log('所有站点数据已生成:', this.stations);
+
+      // 数据加载后，生成热力图
+      this.generateHeatmapData();
+    },
+
+    // --- Path Management Actions ---
+    addPath(path: SavedPathData) {
+      if (!this.paths.some(p => p.id === path.id)) {
+        this.paths.push(path);
+      }
+    },
+
+    removePath(pathId: string) {
+      this.paths = this.paths.filter(p => p.id !== pathId);
+    },
+
+    clearAllPaths() {
+      this.paths = [];
+    },
+    // -----------------------------
+
+    // 生成热力图数据
+    generateHeatmapData() {
+      if (this.stations.length === 0) return;
+      
+      this.heatmapData = this.stations.map(station => ({
+        lng: station.position.lng,
+        lat: station.position.lat,
+        // 模拟客流量，数值越大，热力越强
+        count: Math.floor(Math.random() * 500) + 100 
+      }));
+
+      console.log('热力图数据已生成:', this.heatmapData);
     },
     
     // 选择站点
@@ -277,28 +345,12 @@ export const useMapStore = defineStore({
     addDispatchPlan(sourceStation: Station, targetStation: Station, bikeCount: number) {
       const id = `DP${this.dispatchPlans.length + 1}`;
       
-      // 创建路径点（简单演示，实际项目应使用路径规划API）
-      const path = [];
-      const pointCount = Math.floor(Math.random() * 5) + 3; // 3-7个路径点
-      
-      const startLng = sourceStation.position.lng;
-      const startLat = sourceStation.position.lat;
-      const endLng = targetStation.position.lng;
-      const endLat = targetStation.position.lat;
-      
-      // 起点
-      path.push({lng: startLng, lat: startLat});
-      
-      // 中间点
-      for (let i = 1; i < pointCount - 1; i++) {
-        const ratio = i / (pointCount - 1);
-        const lng = startLng + (endLng - startLng) * ratio + (Math.random() - 0.5) * 0.01;
-        const lat = startLat + (endLat - startLat) * ratio + (Math.random() - 0.5) * 0.01;
-        path.push({lng, lat});
-      }
-      
-      // 终点
-      path.push({lng: endLng, lat: endLat});
+      // 使用真实路径规划API（需要异步处理）
+      // 这里暂时使用直线路径，实际使用时应该调用路径规划服务
+      const path = [
+        {lng: sourceStation.position.lng, lat: sourceStation.position.lat},
+        {lng: targetStation.position.lng, lat: targetStation.position.lat}
+      ];
       
       // 添加到调度方案列表
       this.dispatchPlans.push({

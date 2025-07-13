@@ -9,12 +9,28 @@ export interface TrafficData {
 export interface Station {
   id: string;
   name: string;
-  lines: string[];
-  entrances: number;
-  position: {
-    lng: number;
-    lat: number;
-  };
+  line: string;
+  lat: number;
+  lng: number;
+}
+
+// Add User-related types
+export type UserRole = 'user' | 'manager' | 'subway' | 'admin' | 'guest' | 'ROLE_USER' | 'ROLE_MANAGER' | 'ROLE_SUBWAY' | 'ROLE_ADMIN';
+
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  role: UserRole;
+  accessToken?: string;
+  avatar?: string;
+  permissions?: string[];
+}
+
+export interface AuthState {
+  token: string | null;
+  user: User | null;
+  returnUrl: string | null;
 }
 
 // 共享单车类型

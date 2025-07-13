@@ -52,6 +52,41 @@ export const mockStations = [
     },
     entrances: 3,
     lines: ['1号线', '10号线'],
+  },
+  {
+    id: 6,
+    name: '海淀黄庄站',
+    position: { lng: 116.32, lat: 39.98 },
+    entrances: 4,
+    lines: ['4号线', '10号线'],
+  },
+  {
+    id: 7,
+    name: '望京西站',
+    position: { lng: 116.45, lat: 39.99 },
+    entrances: 3,
+    lines: ['13号线', '15号线'],
+  },
+  {
+    id: 8,
+    name: '宋家庄站',
+    position: { lng: 116.43, lat: 39.86 },
+    entrances: 5,
+    lines: ['5号线', '10号线', '亦庄线'],
+  },
+  {
+    id: 9,
+    name: '军事博物馆站',
+    position: { lng: 116.33, lat: 39.90 },
+    entrances: 2,
+    lines: ['1号线', '9号线'],
+  },
+  {
+    id: 10,
+    name: '知春路站',
+    position: { lng: 116.33, lat: 39.97 },
+    entrances: 3,
+    lines: ['10号线', '13号线'],
   }
 ];
 
@@ -226,46 +261,65 @@ export const generateDispatchPlans = () => {
   ];
 };
 
-// 生成路径规划
+// 生成路径规划（已废弃，使用真实地图API）
 export const generateDispatchRoute = (sourceId: number, destinationId: number) => {
-  const source = mockStations.find(s => s.id === sourceId);
-  const destination = mockStations.find(s => s.id === destinationId);
-  
-  if (!source || !destination) return null;
-  
-  // 生成途经点（为了让路径更自然）
-  const waypoints = [];
-  const pointCount = Math.floor(Math.random() * 3) + 2;
-  
-  for (let i = 0; i < pointCount; i++) {
-    const progress = (i + 1) / (pointCount + 1);
-    
-    // 基于起点和终点间的线性插值，加上一些随机扰动
-    const lng = source.position.lng + progress * (destination.position.lng - source.position.lng) +
-      (Math.random() - 0.5) * 0.01;
-    const lat = source.position.lat + progress * (destination.position.lat - source.position.lat) +
-      (Math.random() - 0.5) * 0.01;
-    
-    waypoints.push({ lng, lat });
+  console.warn('generateDispatchRoute 已废弃，请使用真实的地图API进行路径规划');
+  return null;
+};
+
+export const generateStationRanking = (metric: string, limit: number) => {
+  return mockStations
+    .map(station => ({
+      stationId: station.id,
+      stationName: station.name,
+      value: Math.floor(Math.random() * 5000) + 1000 // 随机生成 1000-6000 的客流量
+    }))
+    .sort((a, b) => b.value - a.value) // 降序排序
+    .slice(0, limit);
+};
+
+export const generateSystemTrend = (granularity: string, range: string) => {
+  let labels: string[];
+  let dataPoints: number;
+
+  if (range === 'last7days') {
+    labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    dataPoints = 7;
+  } else if (range === 'last30days') {
+    labels = Array.from({ length: 30 }, (_, i) => `D${i + 1}`);
+    dataPoints = 30;
+  } else { // last24hours
+    labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+    dataPoints = 24;
   }
-  
-  // 完整路径包括起点、途经点和终点
-  const path = [
-    source.position,
-    ...waypoints,
-    destination.position
-  ];
-  
+
+  const generateSeriesData = () => Array.from({ length: dataPoints }, () => Math.floor(Math.random() * 15000) + 5000);
+
   return {
-    sourceId,
-    destinationId,
-    distance: Math.floor(Math.random() * 5) + 3, // 3-8公里
-    duration: Math.floor(Math.random() * 30) + 15, // 15-45分钟
-    path
+    labels,
+    series: [
+      { name: '进站', data: generateSeriesData() },
+      { name: '出站', data: generateSeriesData() }
+    ]
   };
 };
 
-// 模拟API请求，返回Promise
+export const generateStationComparison = (stationIds: string[], metric: string, range: string) => {
+  const labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  const series = stationIds.map(id => {
+    const station = mockStations.find(s => s.id === parseInt(id));
+    return {
+      stationName: station ? station.name : `站点 ${id}`,
+      data: Array.from({ length: 7 }, () => Math.floor(Math.random() * 8000) + 1000)
+    };
+  });
+  return { labels, series };
+};
+
+
+/**
+ * 模拟API请求的通用函数
+ */
 export const mockApiRequest = <T>(data: T, delay: number = 500): Promise<T> => {
   return new Promise((resolve) => {
     setTimeout(() => {
