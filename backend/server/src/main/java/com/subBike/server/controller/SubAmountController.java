@@ -44,7 +44,7 @@ public class SubAmountController {
             // 显式指定日期格式为 yyyy-MM-dd
              @DateTimeFormat(pattern = "yyyy-MM-dd") Date date,
             //request 要求为in、out、total
-            @RequestParam("Request") String request
+            @RequestParam("request") String request
 
     )
     {
@@ -168,7 +168,7 @@ public class SubAmountController {
             @ApiResponse(responseCode = "500", description = "服务器内部错误")
     })
 
-    public ResponseEntity<List> getMap(  @DateTimeFormat(pattern = "yyyy-MM-dd") Date date, @RequestParam("Request") String request){
+    public ResponseEntity<List> getMap(  @DateTimeFormat(pattern = "yyyy-MM-dd") Date date, @RequestParam("request") String request){
         try{
             //返回 station，population的List<Map>
             List<AmountDto>sublist=new ArrayList<>();
