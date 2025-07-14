@@ -156,6 +156,7 @@ public class SubAmountController {
             parameters = {
                     @Parameter(name = "date", description = "查询日期（格式：yyyy-MM-dd）",
                             example = "2023-01-01", required = true)
+
             }
 
     )
@@ -167,10 +168,44 @@ public class SubAmountController {
             @ApiResponse(responseCode = "500", description = "服务器内部错误")
     })
 
-    public List<AmountDto> getMap(  @DateTimeFormat(pattern = "yyyy-MM-dd") Date date){
-        List<AmountDto>list=new ArrayList<>();
-        list.addAll(subService.getMap(date));
-        return  list;
+    public ResponseEntity<List> getMap(  @DateTimeFormat(pattern = "yyyy-MM-dd") Date date, @RequestParam("Request") String request){
+        try{
+            //返回 station，population的List<Map>
+            List<AmountDto>sublist=new ArrayList<>();
+            sublist.addAll(subService.getMap(date));
+
+
+
+            List<Map<String,Long>> list=new ArrayList<>();
+            if(request.equals("in")) {
+                for(AmountDto dto:sublist){
+                    Map<String, Long> innerMap = new HashMap<>();
+                    innerMap.put(dto.getStation(),dto.getInNum());
+                    list.add(innerMap);
+                }
+            }
+            else if(request.equals("out")) {
+                for(AmountDto dto:sublist){
+                    Map<String, Long> innerMap = new HashMap<>();
+                    innerMap.put(dto.getStation(),dto.getOutNum());
+                    list.add(innerMap);
+                }
+            }
+            else{
+                for(AmountDto dto:sublist){
+                    Map<String, Long> innerMap = new HashMap<>();
+                    innerMap.put(dto.getStation(),dto.getInNum()+dto.getOutNum());
+                    list.add(innerMap);
+                }
+            }
+
+
+            return ResponseEntity.ok(list);
+        }
+
+        catch(Exception e){
+            return ResponseEntity.badRequest().body(Collections.singletonList(e.getMessage()));
+        }
 
 }
 

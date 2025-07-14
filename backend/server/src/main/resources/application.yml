@@ -4,7 +4,7 @@ spring:
     exclude:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://39.96.171.100/subbike?allowPublicKeyRetrieval=true&setUnicode=true&characterEncoding=utf8&useAffectedRows=true
+    url: jdbc:mysql://39.96.195.232/subbike?allowPublicKeyRetrieval=true&setUnicode=true&characterEncoding=utf8&useAffectedRows=true
     username: admin
     password: password
   jpa:
