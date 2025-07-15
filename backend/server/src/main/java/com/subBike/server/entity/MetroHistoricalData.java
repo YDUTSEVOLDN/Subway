@@ -48,7 +48,7 @@
 //    private LocalTime timeOnly;
 //
 //    @Column(name = "is_transfer", nullable = false)
-//    private Boolean isTransfer;
+//    private Integer isTransfer;
 //
 //    @Column(name = "temperature", precision = 10, scale = 6)
 //    private BigDecimal temperature;
@@ -59,17 +59,18 @@
 //    @Column(name = "wind_speed", precision = 10, scale = 6)
 //    private BigDecimal windSpeed;
 //
-//    @Column(name = "created_at", nullable = false, updatable = false)
+//    // 修改：允许created_at为空，并设置默认值
+//    @Column(name = "created_at",  nullable = true,updatable = false)
 //    private LocalDateTime createdAt;
 //
-//    @Column(name = "updated_at")
+//    // 修改：允许updated_at为空
+//    @Column(name = "updated_at", nullable = true)
 //    private LocalDateTime updatedAt;
 //
-//    // 数据来源标识
-//    @Column(name = "data_source", length = 50, columnDefinition = "VARCHAR(50) DEFAULT 'manual'")
-//    private String dataSource = "manual"; // manual, import, api
+//    // 修改：允许data_source为空
+//    @Column(name = "data_source", nullable = true, length = 50)
+//    private String dataSource;
 //
-//    // 构造函数
 //    public MetroHistoricalData() {
 //        this.createdAt = LocalDateTime.now();
 //        this.updatedAt = LocalDateTime.now();
@@ -77,7 +78,7 @@
 //
 //    public MetroHistoricalData(LocalDate date, String station, String district,
 //                               LocalTime timeSlot, Integer inCount, Integer outCount,
-//                               Boolean isTransfer, BigDecimal temperature,
+//                               Integer isTransfer, BigDecimal temperature,
 //                               BigDecimal humidity, BigDecimal windSpeed) {
 //        this();
 //        this.date = date;
@@ -97,6 +98,22 @@
 //    protected void onUpdate() {
 //        this.updatedAt = LocalDateTime.now();
 //    }
+//
+//
+//    // 添加JPA生命周期回调
+//    @PrePersist
+//    protected void onCreate() {
+//        if (this.createdAt == null) {
+//            this.createdAt = LocalDateTime.now();
+//        }
+//        if (this.updatedAt == null) {
+//            this.updatedAt = LocalDateTime.now();
+//        }
+//        if (this.dataSource == null) {
+//            this.dataSource = "import";
+//        }
+//    }
+//
 //
 //    // Getter和Setter方法
 //    public Long getId() { return id; }
@@ -123,8 +140,8 @@
 //    public LocalTime getTimeOnly() { return timeOnly; }
 //    public void setTimeOnly(LocalTime timeOnly) { this.timeOnly = timeOnly; }
 //
-//    public Boolean getIsTransfer() { return isTransfer; }
-//    public void setIsTransfer(Boolean isTransfer) { this.isTransfer = isTransfer; }
+//    public Integer getIsTransfer() { return isTransfer; }
+//    public void setIsTransfer(Integer isTransfer) { this.isTransfer = isTransfer; }
 //
 //    public BigDecimal getTemperature() { return temperature; }
 //    public void setTemperature(BigDecimal temperature) { this.temperature = temperature; }

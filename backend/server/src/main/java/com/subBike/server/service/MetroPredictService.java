@@ -8,10 +8,10 @@
 //    private OrtSession session;
 //
 //    public MetroPredictService() throws OrtException {
-//        // 初始化ONNX环境和加载模型
-//        this.env = OrtEnvironment.getEnvironment();
-//        this.session = env.createSession("metro_lstm.onnx", // 转换后的ONNX模型
-//                new OrtSession.SessionOptions());
+////        // 初始化ONNX环境和加载模型
+////        this.env = OrtEnvironment.getEnvironment();
+////        this.session = env.createSession("metro_lstm.onnx", // 转换后的ONNX模型
+////                new OrtSession.SessionOptions());
 //
 //        // 打印模型信息，帮助调试
 //        printModelInfo();
@@ -21,28 +21,28 @@
 //     * 打印模型输入输出信息，帮助调试
 //     */
 //    private void printModelInfo() throws OrtException {
-//        System.out.println("=== 模型信息 ===");
-//
-//        // 输入信息
-//        System.out.println("输入节点:");
-//        for (String inputName : session.getInputNames()) {
-//            System.out.println("  输入名称: " + inputName);
-//            var inputInfo = session.getInputInfo().get(inputName);
-//            if (inputInfo != null) {
-//                System.out.println("  输入类型: " + inputInfo.getInfo());
-//            }
-//        }
-//
-//        // 输出信息
-//        System.out.println("输出节点:");
-//        for (String outputName : session.getOutputNames()) {
-//            System.out.println("  输出名称: " + outputName);
-//            var outputInfo = session.getOutputInfo().get(outputName);
-//            if (outputInfo != null) {
-//                System.out.println("  输出类型: " + outputInfo.getInfo());
-//            }
-//        }
-//        System.out.println("================");
+//       System.out.println("=== 模型信息 ===");
+////
+////        // 输入信息
+////        System.out.println("输入节点:");
+////        for (String inputName : session.getInputNames()) {
+////            System.out.println("  输入名称: " + inputName);
+////            var inputInfo = session.getInputInfo().get(inputName);
+////            if (inputInfo != null) {
+////                System.out.println("  输入类型: " + inputInfo.getInfo());
+////            }
+////        }
+////
+////        // 输出信息
+////        System.out.println("输出节点:");
+////        for (String outputName : session.getOutputNames()) {
+////            System.out.println("  输出名称: " + outputName);
+////            var outputInfo = session.getOutputInfo().get(outputName);
+////            if (outputInfo != null) {
+////                System.out.println("  输出类型: " + outputInfo.getInfo());
+////            }
+////        }
+////        System.out.println("================");
 //    }
 //
 //    /**

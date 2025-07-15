@@ -12,10 +12,11 @@ import java.util.Locale;
 
 public class CsvImportApplication {
     // 数据库连接信息
+
     private static final String DB_URL =
-            "jdbc:mysql://localhost:3306/subBike?useUnicode=true&characterEncoding=utf8";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "Jnh@9372";
+            "jdbc:mysql://39.96.195.232:3306/subbike?useUnicode=true&characterEncoding=utf8";
+    private static final String DB_USER = "admin";
+    private static final String DB_PASSWORD = "password";
 
     // 日期格式：匹配文件名中的 "2019-May-01"
     private static final SimpleDateFormat FILE_DATE_FORMAT = new SimpleDateFormat("yyyy-MMM-dd", Locale.US);
@@ -27,12 +28,15 @@ public class CsvImportApplication {
 
     public static void main(String[] args) {
         System.out.println("===== 开始CSV导入程序 =====");
+        String directoryPath;
         if (args.length < 1) {
-            System.err.println("错误：请指定CSV文件目录作为参数（例如：java ... 目录路径）");
+//            directoryPath="D:\\作业\\小学期\\subBike\\Subway\\backend\\server\\src\\main\\resources\\csv\\subway";
+            System.err.println("请指定CSV文件目录作为参数（例如：java ... 目录路径）");
+
             return;
         }
 
-        String directoryPath = args[0];
+       directoryPath = args[0];
         System.out.println("待导入的CSV目录：" + directoryPath);
         CsvImportApplication importer = new CsvImportApplication();
 
@@ -215,6 +219,15 @@ public class CsvImportApplication {
      * 获取数据库连接
      */
     private Connection getConnection() throws SQLException {
+        try {
+            // 新版本的驱动类名
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            System.out.println("MySQL驱动加载成功");
+        } catch (ClassNotFoundException e) {
+            System.err.println("MySQL驱动加载失败: " + e.getMessage());
+            throw new SQLException("MySQL驱动未找到", e);
+        }
+
         System.out.println("尝试连接数据库：" + DB_URL.split("\\?")[0] + "，用户：" + DB_USER);
         Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
         System.out.println("数据库连接成功：" + conn);

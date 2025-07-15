@@ -232,5 +232,31 @@ public class SubAmountController {
         return list;
     }
 
+//
+//    @GetMapping("/predict")
+//    @Operation(
+//            summary = "获取未来时段流量数据",
+//            description = "查询指定日期各时段数据绘制趋势曲线",
+//            parameters = {
+//                    @Parameter(name = "date", description = "查询日期（格式：yyyy-MM-dd）",
+//                            example = "2023-01-01", required = true),
+//                    @Parameter(name = "station", description = "查询日期（格式：yyyy-MM-dd）",
+//                            example = "2023-01-01", required = true)
+//            }
+//    )
+//    @ApiResponses(value = {
+//            @ApiResponse(responseCode = "200", description = "查询成功",
+//                    content = @Content(mediaType = "application/json",
+//                            schema = @Schema(implementation = AmountDto.class))),
+//            @ApiResponse(responseCode = "400", description = "无效的日期格式"),
+//            @ApiResponse(responseCode = "500", description = "服务器内部错误")
+//    })
+//    public  List<TimeAmountDto>  getPredict( @DateTimeFormat(pattern = "yyyy-MM-dd") Date date)
+//    {
+//        List<TimeAmountDto> list=new ArrayList<>();
+//        list.addAll(subService.getTrend(date));
+//        return list;
+//    }
+
 
 }
