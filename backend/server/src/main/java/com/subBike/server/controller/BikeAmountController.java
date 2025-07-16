@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController//接口返回对象，转换成json文本
-@CrossOrigin("*")
+@CrossOrigin(origins = "*", maxAge = 3600)
 @RequestMapping("/api/bike")//用/user/**访问
 @Tag(name = "地铁流量", description = "共享单车的API接口")
 public class BikeAmountController {

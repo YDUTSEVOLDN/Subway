@@ -2,6 +2,7 @@ package com.subBike.server.mapper;
 import com.subBike.server.entity.dto.AmountDto;
 import com.subBike.server.entity.dto.DateAmountDto;
 import com.subBike.server.entity.dto.TimeAmountDto;
+import com.subBike.server.entity.dto.TimeSlotDto;
 import com.subBike.server.entity.id.SubAmountID;
 
 import com.subBike.server.entity.SubAmount;
@@ -13,6 +14,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 
@@ -62,6 +64,14 @@ import java.util.List;
                 "WHERE s.date = :date " +
                 "GROUP BY s.time")
         List<TimeAmountDto> getTrend(@Param("date") Date date);
+
+        @Query("SELECT new com.subBike.server.entity.dto.TimeSlotDto(" +
+                "p.timeSlot, SUM(p.inCountPred), SUM(p.outcountPred)) " +
+                "FROM Predict p " +
+                "WHERE p.date = :date " +
+                "AND p.station=:station "+
+                "GROUP BY FUNCTION('HOUR', p.timeSlot)")
+        List<TimeSlotDto> getpredict(@Param("date") LocalDate date, String station);
     }
 
 

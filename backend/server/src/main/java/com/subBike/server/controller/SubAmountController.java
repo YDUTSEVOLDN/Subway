@@ -4,6 +4,7 @@ import com.subBike.server.entity.SubAmount;
 import com.subBike.server.entity.dto.AmountDto;
 import com.subBike.server.entity.dto.DateAmountDto;
 import com.subBike.server.entity.dto.TimeAmountDto;
+import com.subBike.server.entity.dto.TimeSlotDto;
 import com.subBike.server.service.ISubAmountService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,11 +19,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Struct;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController//接口返回对象，转换成json文本
-@CrossOrigin("*")
+@CrossOrigin(origins = "*", maxAge = 3600)
 @RequestMapping("/api/subway")//用/user/**访问
 @Tag(name = "地铁流量", description = "地铁流量的API接口")
 public class SubAmountController {
@@ -232,31 +234,31 @@ public class SubAmountController {
         return list;
     }
 
-//
-//    @GetMapping("/predict")
-//    @Operation(
-//            summary = "获取未来时段流量数据",
-//            description = "查询指定日期各时段数据绘制趋势曲线",
-//            parameters = {
-//                    @Parameter(name = "date", description = "查询日期（格式：yyyy-MM-dd）",
-//                            example = "2023-01-01", required = true),
-//                    @Parameter(name = "station", description = "查询日期（格式：yyyy-MM-dd）",
-//                            example = "2023-01-01", required = true)
-//            }
-//    )
-//    @ApiResponses(value = {
-//            @ApiResponse(responseCode = "200", description = "查询成功",
-//                    content = @Content(mediaType = "application/json",
-//                            schema = @Schema(implementation = AmountDto.class))),
-//            @ApiResponse(responseCode = "400", description = "无效的日期格式"),
-//            @ApiResponse(responseCode = "500", description = "服务器内部错误")
-//    })
-//    public  List<TimeAmountDto>  getPredict( @DateTimeFormat(pattern = "yyyy-MM-dd") Date date)
-//    {
-//        List<TimeAmountDto> list=new ArrayList<>();
-//        list.addAll(subService.getTrend(date));
-//        return list;
-//    }
+
+    @GetMapping("/predict")
+    @Operation(
+            summary = "获取未来时段流量数据",
+            description = "查询指定日期各时段数据绘制趋势曲线",
+            parameters = {
+                    @Parameter(name = "date", description = "查询日期（格式：yyyy-MM-dd）",
+                            example = "2023-01-01", required = true),
+                    @Parameter(name = "station", description = "",
+                            example = "北京站", required = true)
+            }
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "查询成功",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = AmountDto.class))),
+            @ApiResponse(responseCode = "400", description = "无效的日期格式"),
+            @ApiResponse(responseCode = "500", description = "服务器内部错误")
+    })
+    public  List<TimeSlotDto>  getPredict(@DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date, String station)
+    {
+        List<TimeSlotDto> list=new ArrayList<>();
+        list.addAll(subService.getpredict(date,station));
+        return list;
+    }
 
 
 }

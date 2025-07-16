@@ -3,14 +3,12 @@ package com.subBike.server.service;
 import com.subBike.server.entity.dto.AmountDto;
 import com.subBike.server.entity.dto.DateAmountDto;
 import com.subBike.server.entity.dto.TimeAmountDto;
+import com.subBike.server.entity.dto.TimeSlotDto;
 import com.subBike.server.mapper.SubAmountMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.*;
 
 @Service
@@ -50,6 +48,12 @@ public class SubAmountService implements ISubAmountService{
 
         return subAmountmapper.getTrend(date);
     }
+    @Override
+    public List<TimeSlotDto> getpredict(LocalDate date, String station){
+
+        return subAmountmapper.getpredict(date,station);
+    }
+
 
 
 }

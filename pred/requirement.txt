@@ -1,0 +1,7 @@
+flask
+sqlalchemy
+python-dotenv
+# 添加你的数据库驱动，例如：
+# psycopg2-binary (PostgreSQL)
+# pymysql (MySQL)
+# pyodbc (SQL Server)
