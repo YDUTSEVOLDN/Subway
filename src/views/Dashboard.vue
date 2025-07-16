@@ -3,6 +3,33 @@
     <div class="map-section">
       <AMapComponent ref="mapRef" :station-statuses="allStationStatuses" />
       
+      <!-- 地图图例 -->
+      <div class="map-legend">
+        <div class="legend-section">
+          <div class="legend-title">人流量热力图</div>
+          <div class="legend-item">
+            <span class="color-box congested"></span>
+            <span>拥挤</span>
+          </div>
+          <div class="legend-item">
+            <span class="color-box moderate"></span>
+            <span>适中</span>
+          </div>
+          <div class="legend-item">
+            <span class="color-box clear"></span>
+            <span>通畅</span>
+          </div>
+        </div>
+        <el-divider direction="horizontal" />
+        <div class="legend-section">
+          <div class="legend-title">站点状态</div>
+          <div class="legend-item">
+            <span class="status-icon shortage"></span>
+            <span>单车不足</span>
+          </div>
+        </div>
+      </div>
+
       <transition name="slide-from-right">
         <div class="info-panel" v-if="mapStore.selectedStation">
           <div class="panel-header">
@@ -338,8 +365,8 @@ function closeInfoPanel() {
 <style scoped lang="scss">
 .dashboard {
   height: 100%;
+  width: 100%;
   display: flex;
-  flex-direction: column;
   
   .top-stats {
     margin-bottom: 16px;
@@ -432,6 +459,7 @@ function closeInfoPanel() {
   .map-section {
     flex: 1;
     position: relative;
+    height: 100%;
     border-radius: 8px;
     overflow: hidden;
     display: flex;
@@ -439,7 +467,7 @@ function closeInfoPanel() {
     
     .info-panel {
       position: absolute;
-      top: 100px; /* 修改：向下移动，为顶部状态栏留出空间 */
+      top: 0; /* 修改：向下移动，为顶部状态栏留出空间 */
       right: 10px;
       width: 380px;
       max-height: calc(100% - 20px);
@@ -569,6 +597,76 @@ function closeInfoPanel() {
         .dispatch-btn {
           margin-top: 12px;
           width: 100%;
+        }
+      }
+    }
+  }
+
+  .map-legend {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    z-index: 10;
+    font-size: 14px;
+    color: #333;
+
+    .legend-section + .legend-section {
+      margin-top: 10px;
+    }
+    
+    .el-divider--horizontal {
+      margin: 10px 0;
+    }
+
+    .legend-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      text-align: center;
+      font-size: 15px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .color-box {
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+
+        &.congested {
+          background-color: #f56c6c; // Red
+        }
+        &.moderate {
+          background-color: #e6a23c; // Yellow
+        }
+        &.clear {
+          background-color: #67c23a; // Green
+        }
+      }
+
+      .status-icon {
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        
+        &.shortage {
+          background-color: #f56c6c;
+          border: 2px solid #fff;
+          box-shadow: 0 0 0 2px #f56c6c;
         }
       }
     }

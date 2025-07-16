@@ -2,7 +2,7 @@
   <header class="app-header">
     <div class="logo-area">
       <img src="/logo.svg" alt="Logo" class="logo" />
-      <h1>智慧交通监控与调度平台</h1>
+      <h1>智慧地铁交通监控与调度平台</h1>
     </div>
     
     <div class="header-right">

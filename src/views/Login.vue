@@ -1,141 +1,155 @@
 <template>
   <div class="login-container">
-    <div class="login-box">
-      <div class="login-header">
-        <img src="../assets/logo.svg" alt="Logo" class="logo" />
-        <h2>智慧交通监控与调度平台</h2>
-      </div>
-      
-      <el-tabs v-model="activeTab" class="login-tabs">
-        <el-tab-pane label="登录" name="login">
-          <el-form 
-            ref="loginForm$"
-            :model="loginForm" 
-            :rules="loginRules"
-            label-position="top"
-          >
-            <el-form-item label="用户名" prop="username">
-              <el-input 
-                v-model="loginForm.username" 
-                prefix-icon="User"
-                placeholder="请输入用户名"
-              />
-            </el-form-item>
-            
-            <el-form-item label="密码" prop="password">
-              <el-input 
-                v-model="loginForm.password" 
-                prefix-icon="Lock"
-                type="password" 
-                placeholder="请输入密码"
-                show-password
-              />
-            </el-form-item>
-            
-            <el-form-item>
-              <div class="remember-forgot">
-                <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-                <el-button link type="primary">忘记密码?</el-button>
-              </div>
-            </el-form-item>
-            
-            <el-form-item>
-              <el-button 
-                type="primary" 
-                :loading="loading" 
-                class="submit-btn"
-                @click="handleLogin"
-              >
-                登录
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
+    <div class="background-overlay"></div>
+    <transition name="fade-in">
+      <div class="login-box">
+        <div class="login-header">
+          <img src="../assets/logo.svg" alt="Logo" class="logo" />
+          <h2 class="title">智慧地铁交通监控与调度平台</h2>
+        </div>
         
-        <el-tab-pane label="注册" name="register">
-          <el-form 
-            ref="registerForm$"
-            :model="registerForm" 
-            :rules="registerRules"
-            label-position="top"
-          >
-            <el-form-item label="用户名" prop="username">
-              <el-input 
-                v-model="registerForm.username" 
-                prefix-icon="User"
-                placeholder="请输入用户名"
-              />
-            </el-form-item>
-            
-            <el-form-item label="邮箱" prop="email">
-              <el-input 
-                v-model="registerForm.email" 
-                prefix-icon="Message"
-                placeholder="请输入邮箱"
-              />
-            </el-form-item>
+        <el-tabs v-model="activeTab" class="login-tabs">
+          <el-tab-pane label="登录" name="login">
+            <el-form 
+              ref="loginForm$"
+              :model="loginForm" 
+              :rules="loginRules"
+              label-position="top"
+              class="login-form"
+            >
+              <el-form-item label="用户名" prop="username">
+                <el-input 
+                  v-model="loginForm.username" 
+                  prefix-icon="User"
+                  placeholder="请输入用户名"
+                  size="large"
+                />
+              </el-form-item>
+              
+              <el-form-item label="密码" prop="password">
+                <el-input 
+                  v-model="loginForm.password" 
+                  prefix-icon="Lock"
+                  type="password" 
+                  placeholder="请输入密码"
+                  show-password
+                  size="large"
+                />
+              </el-form-item>
+              
+              <el-form-item>
+                <div class="remember-forgot">
+                  <el-checkbox v-model="rememberMe">记住我</el-checkbox>
+                  <el-button link type="primary">忘记密码?</el-button>
+                </div>
+              </el-form-item>
+              
+              <el-form-item>
+                <el-button 
+                  type="primary" 
+                  :loading="loading" 
+                  class="submit-btn"
+                  @click="handleLogin"
+                  size="large"
+                >
+                  登录
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+          
+          <el-tab-pane label="注册" name="register">
+            <el-form 
+              ref="registerForm$"
+              :model="registerForm" 
+              :rules="registerRules"
+              label-position="top"
+              class="login-form"
+            >
+              <el-form-item label="用户名" prop="username">
+                <el-input 
+                  v-model="registerForm.username" 
+                  prefix-icon="User"
+                  placeholder="请输入用户名"
+                  size="large"
+                />
+              </el-form-item>
+              
+              <el-form-item label="邮箱" prop="email">
+                <el-input 
+                  v-model="registerForm.email" 
+                  prefix-icon="Message"
+                  placeholder="请输入邮箱"
+                  size="large"
+                />
+              </el-form-item>
 
-            <el-form-item label="验证码" prop="verificationCode">
-              <el-input 
-                v-model="registerForm.verificationCode" 
-                prefix-icon="Key"
-                placeholder="请输入6位验证码"
-              >
-                <template #append>
-                  <el-button 
-                    @click="sendVerificationCode" 
-                    :disabled="isSendingCode || countdown > 0"
-                  >
-                    {{ countdown > 0 ? `${countdown}秒后重试` : '发送验证码' }}
-                  </el-button>
-                </template>
-              </el-input>
-            </el-form-item>
-            
-            <el-form-item label="密码" prop="password">
-              <el-input 
-                v-model="registerForm.password" 
-                prefix-icon="Lock"
-                type="password" 
-                placeholder="请输入密码"
-                show-password
-              />
-            </el-form-item>
-            
-            <el-form-item label="确认密码" prop="confirmPassword">
-              <el-input 
-                v-model="registerForm.confirmPassword" 
-                prefix-icon="Lock"
-                type="password" 
-                placeholder="请再次输入密码"
-                show-password
-              />
-            </el-form-item>
-            
-            <el-form-item label="角色" prop="role" v-if="activeTab === 'register'">
-              <div class="role-selection">
-                <el-radio-group v-model="registerForm.role">
-                  <el-radio-button value="user">普通用户</el-radio-button>
-                  <el-radio-button value="manager">单车管理员</el-radio-button>
-                  <el-radio-button value="subway">地铁管理员</el-radio-button>
-                </el-radio-group>
-              </div>
-            </el-form-item>
-            
-            <el-form-item>
-              <el-button 
-                type="primary" 
-                :loading="loading" 
-                class="submit-btn"
-                @click="handleRegister"
-              >
-                注册
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
-      </el-tabs>
-    </div>
+              <el-form-item label="验证码" prop="verificationCode">
+                <el-input 
+                  v-model="registerForm.verificationCode" 
+                  prefix-icon="Key"
+                  placeholder="请输入6位验证码"
+                  size="large"
+                >
+                  <template #append>
+                    <el-button 
+                      @click="sendVerificationCode" 
+                      :disabled="isSendingCode || countdown > 0"
+                    >
+                      {{ countdown > 0 ? `${countdown}秒后重试` : '发送验证码' }}
+                    </el-button>
+                  </template>
+                </el-input>
+              </el-form-item>
+              
+              <el-form-item label="密码" prop="password">
+                <el-input 
+                  v-model="registerForm.password" 
+                  prefix-icon="Lock"
+                  type="password" 
+                  placeholder="请输入密码"
+                  show-password
+                  size="large"
+                />
+              </el-form-item>
+              
+              <el-form-item label="确认密码" prop="confirmPassword">
+                <el-input 
+                  v-model="registerForm.confirmPassword" 
+                  prefix-icon="Lock"
+                  type="password" 
+                  placeholder="请再次输入密码"
+                  show-password
+                  size="large"
+                />
+              </el-form-item>
+              
+              <el-form-item label="角色" prop="role" v-if="activeTab === 'register'">
+                <div class="role-selection">
+                  <el-radio-group v-model="registerForm.role">
+                    <el-radio-button value="user">普通用户</el-radio-button>
+                    <el-radio-button value="manager">单车管理员</el-radio-button>
+                    <el-radio-button value="subway">地铁管理员</el-radio-button>
+                  </el-radio-group>
+                </div>
+              </el-form-item>
+              
+              <el-form-item>
+                <el-button 
+                  type="primary" 
+                  :loading="loading" 
+                  class="submit-btn"
+                  @click="handleRegister"
+                  size="large"
+                >
+                  注册
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -342,50 +356,139 @@ const handleRegister = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background-color: #f5f7fa;
-  background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(135deg, #667eea, #764ba2);
 }
 
 .login-box {
-  width: 400px;
-  padding: 30px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  width: 420px;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  z-index: 10;
 }
 
 .login-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 20px;
-  
+  margin-bottom: 2rem;
+
   .logo {
-    width: 80px;
-    height: 80px;
-    margin-bottom: 16px;
+    height: 50px;
+    margin-bottom: 1rem;
   }
-  
-  h2 {
-    font-size: 22px;
-    color: #303133;
-    margin: 0;
+
+  .title {
+    font-size: 1.5rem;
+    font-weight: 300;
+    text-align: center;
   }
 }
 
-.login-tabs {
-  width: 100%;
-}
-
-.submit-btn {
-  width: 100%;
-  margin-top: 10px;
+.login-form {
+  margin-top: 1.5rem;
 }
 
 .remember-forgot {
   display: flex;
   justify-content: space-between;
+  width: 100%;
   align-items: center;
+}
+
+.submit-btn {
+  width: 100%;
+  font-size: 1rem;
+  letter-spacing: 2px;
+}
+
+.role-selection {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  
+  .el-radio-group {
+    justify-content: center;
+  }
+}
+
+/* Element Plus Overrides */
+:deep(.el-tabs__item) {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  padding: 0 20px;
+  height: 50px;
+  line-height: 50px;
+
+  &.is-active {
+    color: #fff;
+    font-weight: bold;
+  }
+}
+
+:deep(.el-tabs__active-bar) {
+  background-color: #fff;
+  height: 3px;
+}
+
+:deep(.el-tabs__nav-wrap::after) {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+:deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.2;
+}
+
+:deep(.el-input__inner) {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important;
+  }
+}
+
+:deep(.el-input__prefix-inner),
+:deep(.el-input__suffix-inner) {
+  color: #fff !important;
+}
+
+:deep(.el-input-group__append) {
+  background-color: transparent !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #fff !important;
+}
+
+:deep(.el-checkbox__label) {
+  color: #fff;
+}
+
+:deep(.el-checkbox__inner) {
+  background-color: transparent;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+:deep(.el-button--primary.is-link) {
+  color: #fff;
+  font-weight: bold;
+}
+
+.fade-in-enter-active, .fade-in-leave-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.fade-in-enter-from, .fade-in-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
 }
 </style>   

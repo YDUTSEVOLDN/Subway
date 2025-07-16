@@ -39,7 +39,7 @@ const routes: Array<RouteRecordRaw> = [
     name: 'dashboard',
     component: Dashboard,
     meta: {
-      title: '仪表盘',
+      title: '地图界面',
       icon: 'Odometer',
       showInMenu: true
     }
@@ -73,7 +73,7 @@ const routes: Array<RouteRecordRaw> = [
     name: 'path-planner',
     component: () => import('../views/PathPlanner.vue'),
     meta: {
-      title: '路径规划',
+      title: '调度规划',
       icon: 'Position',
       showInMenu: true,
       requiresAuth: true,
@@ -87,7 +87,7 @@ const routes: Array<RouteRecordRaw> = [
     meta: {
       title: '调度方案',
       icon: 'DocumentChecked',
-      showInMenu: true,
+      showInMenu: false,
       requiresAuth: true,
       allowedRoles: ['manager']
     }
@@ -136,7 +136,8 @@ const router = createRouter({
 // 路由守卫，检查用户是否登录
 router.beforeEach(async (to, from, next) => {
   // 设置页面标题
-  document.title = `${to.meta.title || '智慧交通'} - 监控与调度平台`;
+  const platformName = '智慧地铁交通监控与调度平台';
+  document.title = to.meta.title ? `${to.meta.title} - ${platformName}` : platformName;
   
   // 在路由守卫初始化时，Pinia store可能还未完全激活。
   // 我们直接使用 useUserStore() 来确保获取到最新的状态。

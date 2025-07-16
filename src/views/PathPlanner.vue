@@ -207,7 +207,7 @@
                 </div>
                 
                 <div class="ai-actions">
-                  <el-button type="primary" @click="saveToDispatch">
+                  <el-button v-if="false" type="primary" @click="saveToDispatch">
                     <el-icon><DocumentAdd /></el-icon> 保存方案
                   </el-button>
                   <el-button @click="generateDispatchSummary">
@@ -606,7 +606,7 @@ onMounted(async () => {
   const { start, end, count } = route.query;
 
   if (start && end) {
-    isFromAssistant.value = true; // 设置标志位
+    isFromAssistant.value = true; // 设置标志位，避免触发推荐
 
     const startStation = mapStore.findStationByName(start as string);
     const endStation = mapStore.findStationByName(end as string);
@@ -625,6 +625,18 @@ onMounted(async () => {
     if (startStation && endStation) {
       await nextTick(); // 等待DOM更新
       planPath();
+    }
+  } else if (end) {
+    // 处理从仪表盘跳转过来的情况（只提供了终点）
+    isFromAssistant.value = false; // 确保触发推荐逻辑
+
+    const endStation = mapStore.findStationByName(end as string);
+
+    if (endStation) {
+      targetStation.value = endStation.id; // 赋值以触发 watch 监听器
+    }
+    if (count) {
+      pathForm.value.bikeCount = parseInt(count as string, 10);
     }
   }
 
