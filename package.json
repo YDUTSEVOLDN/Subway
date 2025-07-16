@@ -21,12 +21,14 @@
     "papaparse": "^5.5.3",
     "pinia": "^2.1.7",
     "sass": "^1.69.5",
+    "uuid": "^11.1.0",
     "vue": "^3.3.11",
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
     "@types/dompurify": "^3.0.5",
     "@types/marked": "^4.0.8",
+    "@types/uuid": "^10.0.0",
     "@vitejs/plugin-vue": "^4.5.2",
     "@vue/tsconfig": "^0.7.0",
     "typescript": "^5.3.3",

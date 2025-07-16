@@ -1,5 +1,9 @@
 import axios from 'axios';
 import type { Station } from '../stores/mapStore';
+import { useMapStore } from '@/stores/mapStore';
+import { bikeService } from './bikeService';
+import { pathPlanningService } from './pathPlanningService';
+import trafficService from './trafficService';
 
 interface LLMDispatchSummaryRequest {
   sourceStation: {
@@ -44,6 +48,18 @@ export interface ChatCompletionResponse {
   content: string;
 }
 
+// 定义助手的标准响应格式
+export interface AssistantResponse {
+  type: 'text' | 'path_planning_result';
+  content: string; // LLM生成的自然语言回复
+  payload?: { // 可供前端执行操作的结构化数据
+    startStationName: string;
+    endStationName: string;
+    bikeCount: number;
+  };
+}
+
+
 export class LLMService {
   private apiKey: string;
   private baseUrl: string = 'https://api.deepseek.com/v1';
@@ -52,8 +68,230 @@ export class LLMService {
     this.apiKey = apiKey;
   }
 
+  async processNaturalLanguageQuery(query: string): Promise<AssistantResponse> {
+    const tools = [
+      {
+        type: 'function',
+        function: {
+          name: 'get_station_shortage_ranking',
+          description: '获取当前所有地铁站中，单车最紧缺或最富余的站点排名。',
+          parameters: {
+            type: 'object',
+            properties: {
+              top_n: { type: 'number', description: '需要返回的排名数量，例如前5名。' },
+              order: { type: 'string', enum: ['shortage', 'surplus'], description: '查询短缺排名还是富余排名。' }
+            },
+            required: ['top_n', 'order']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'plan_dispatch_route',
+          description: '为两个指定的地铁站规划单车调度路线。',
+          parameters: {
+            type: 'object',
+            properties: {
+              start_station_name: { type: 'string', description: '起点的地铁站名称，例如"西单"。' },
+              end_station_name: { type: 'string', description: '终点的地铁站名称，例如"国贸"。' },
+              bike_count: { type: 'number', description: '计划调度的单车数量。' }
+            },
+            required: ['start_station_name', 'end_station_name', 'bike_count']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'compare_station_traffic',
+          description: '对比两个指定地铁站最近一段时间的客流量趋势。',
+          parameters: {
+            type: 'object',
+            properties: {
+              station_a_name: { type: 'string', description: '第一个需要对比的地铁站名称。' },
+              station_b_name: { type: 'string', description: '第二个需要对比的地铁站名称。' },
+            },
+            required: ['station_a_name', 'station_b_name']
+          }
+        }
+      }
+    ];
+
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/chat/completions`,
+        {
+          model: 'deepseek-chat',
+          messages: [
+            { role: 'system', content: '你是一个智能交通调度平台的AI助手。你的任务是理解用户的自然语言查询，并使用提供的工具来调用系统内部功能以获取真实数据。然后根据获取到的数据，以友好、清晰的方式回答用户。' },
+            { role: 'user', content: query }
+          ],
+          tools: tools,
+          tool_choice: 'auto'
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`
+          }
+        }
+      );
+
+      const message = response.data.choices[0].message;
+
+      if (message.tool_calls && message.tool_calls.length > 0) {
+        const toolCall = message.tool_calls[0];
+        const functionName = toolCall.function.name;
+        const args = JSON.parse(toolCall.function.arguments);
+
+        let functionResult;
+
+        switch (functionName) {
+          case 'get_station_shortage_ranking':
+            functionResult = await this.execute_get_station_shortage_ranking(args.top_n, args.order);
+            break;
+          case 'plan_dispatch_route':
+            functionResult = await this.execute_plan_dispatch_route(args.start_station_name, args.end_station_name, args.bike_count);
+            break;
+          case 'compare_station_traffic':
+            functionResult = await this.execute_compare_station_traffic(args.station_a_name, args.station_b_name);
+            break;
+          default:
+            return { type: 'text', content: '抱歉，我无法执行一个未知的工具。' };
+        }
+        
+        // After getting the functionResult, before calling the second LLM
+        if (functionName === 'plan_dispatch_route' && functionResult.success) {
+          // If the tool was path planning and it succeeded,
+          // we now have enough info to create a structured response.
+          // Let's get the text summary from the LLM.
+
+          const secondResponse = await this.getFinalAnswer(query, message, toolCall.id, functionResult);
+
+          return {
+            type: 'path_planning_result',
+            content: secondResponse,
+            payload: {
+              startStationName: args.start_station_name,
+              endStationName: args.end_station_name,
+              bikeCount: args.bike_count,
+            }
+          };
+        }
+        
+        // For other tools, just get the text summary
+        const summary = await this.getFinalAnswer(query, message, toolCall.id, functionResult);
+        return { type: 'text', content: summary };
+      } else {
+        // No tool call, just a text response
+        return { type: 'text', content: message.content };
+      }
+    } catch (error) {
+      console.error('处理自然语言查询时出错:', error);
+      return { type: 'text', content: '抱歉，我在处理您的请求时遇到了一个内部错误。' };
+    }
+  }
+  
+  // Helper function to get final LLM summary
+  private async getFinalAnswer(query: string, previousMessage: any, toolCallId: string, toolResult: any): Promise<string> {
+    const response = await axios.post(
+      `${this.baseUrl}/chat/completions`,
+      {
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'user', content: query },
+          previousMessage,
+          {
+            role: 'tool',
+            tool_call_id: toolCallId,
+            content: JSON.stringify(toolResult)
+          }
+        ]
+      },
+      { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.apiKey}` } }
+    );
+    return response.data.choices[0].message.content;
+  }
+
+  // --- Tool Execution Functions ---
+
+  private async execute_get_station_shortage_ranking(top_n: number, order: 'shortage' | 'surplus'): Promise<any> {
+    const mapStore = useMapStore();
+    await mapStore.fetchStations(); // 确保站点数据已加载
+
+    const statuses = await bikeService.getBikeStatusForAllStations();
+    
+    if (!statuses || statuses.length === 0) {
+      return { error: '无法获取站点状态数据，请检查后端服务或数据源。' };
+    }
+
+    const processed = statuses.map(s => ({
+      name: s.name,
+      diff: s.supply - s.demand,
+      supply: s.supply,
+      demand: s.demand,
+    }));
+
+    if (order === 'shortage') {
+      processed.sort((a, b) => a.diff - b.diff);
+      return { ranking_type: 'shortage', result: processed.slice(0, top_n) };
+    } else {
+      processed.sort((a, b) => b.diff - a.diff);
+      return { ranking_type: 'surplus', result: processed.slice(0, top_n) };
+    }
+  }
+
+  private async execute_plan_dispatch_route(start_station_name: string, end_station_name: string, bike_count: number): Promise<any> {
+    const mapStore = useMapStore();
+    await mapStore.fetchStations(); // 确保站点数据已加载
+
+    const startStation = mapStore.findStationByName(start_station_name);
+    const endStation = mapStore.findStationByName(end_station_name);
+
+    if (!startStation || !endStation) {
+      return { error: `无法找到站点: ${!startStation ? start_station_name : ''} ${!endStation ? end_station_name : ''}`.trim() };
+    }
+    
+    await pathPlanningService.initialize();
+    const result = await pathPlanningService.planPath(startStation, endStation, { vehicleType: 'bike', optimizeFor: 'distance' });
+
+    if (!result) {
+      return { error: `无法规划从 ${start_station_name} 到 ${end_station_name} 的路径。`};
+    }
+    
+    return {
+      success: true,
+      start: start_station_name,
+      end: end_station_name,
+      bike_count: bike_count,
+      distance_km: result.distance,
+      duration_minutes: result.duration
+    };
+  }
+
+  private async execute_compare_station_traffic(station_a_name: string, station_b_name: string): Promise<any> {
+    try {
+      const endDate = new Date().toISOString().split('T')[0];
+      const [dataA, dataB] = await Promise.all([
+        trafficService.getWeeklySubwayTotals(station_a_name, endDate),
+        trafficService.getWeeklySubwayTotals(station_b_name, endDate)
+      ]);
+      
+      return {
+        success: true,
+        station_a: { name: station_a_name, weekly_data: dataA },
+        station_b: { name: station_b_name, weekly_data: dataB }
+      };
+    } catch (error) {
+      console.error('获取周流量数据失败:', error);
+      return { error: '获取站点流量数据时发生错误。' };
+    }
+  }
+
+
   /**
-   * 发送聊天消息
+   * 发送聊天消息 (可以保留用于不涉及工具调用的纯聊天)
    * @param messages 消息历史
    * @returns 助手回复
    */

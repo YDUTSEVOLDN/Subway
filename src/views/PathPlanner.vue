@@ -405,7 +405,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
+import { ref, computed, onMounted, watch, nextTick, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { Position, Refresh, Delete, InfoFilled, MagicStick, DocumentAdd, ArrowDown, ArrowUp, Download } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus';
@@ -441,6 +441,7 @@ const rawResultForDetails = ref<any>(null); // State for details dialog
 const dispatchSummary = ref<LLMDispatchSummaryResponse | undefined>(undefined); // 调度方案摘要
 const isGeneratingSummary = ref(false); // 是否正在生成调度方案摘要
 const isAdvancedOptionsCollapsed = ref(true); // 高级选项是否折叠
+const isFromAssistant = ref(false); // 新增标志位
 
 const sourceStation = ref('');
 const targetStation = ref('');
@@ -455,11 +456,14 @@ const pathForm = ref({
 });
 
 watch(targetStation, (newTargetId) => {
-  if (newTargetId && stations.value.length > 0) {
+  // 仅在不是从智能助手跳转过来时，才触发自动推荐
+  if (newTargetId && stations.value.length > 0 && !isFromAssistant.value) {
     recommendSourceStation(newTargetId);
   } else {
-    sourceStation.value = '';
-    recommendationDetails.value = null;
+    // 如果是从助手跳转过来的，重置标志位，以便后续手动操作能触发推荐
+    if (isFromAssistant.value) {
+      isFromAssistant.value = false;
+    }
   }
 });
 
@@ -598,19 +602,29 @@ const disablePastDate = (time: Date) => {
 onMounted(async () => {
   await mapStore.fetchStations();
 
-  const endStationName = route.query.end as string;
-  if (endStationName) {
-    const station = stations.value.find(s => s.name === endStationName);
-    if (station) {
-      targetStation.value = station.id;
-    }
-  }
+  // 检查路由中是否有查询参数
+  const { start, end, count } = route.query;
 
-  const bikeCountParam = route.query.bikeCount as string;
-  if (bikeCountParam) {
-    const count = parseInt(bikeCountParam, 10);
-    if (!isNaN(count) && count > 0) {
-      pathForm.value.bikeCount = count;
+  if (start && end) {
+    isFromAssistant.value = true; // 设置标志位
+
+    const startStation = mapStore.findStationByName(start as string);
+    const endStation = mapStore.findStationByName(end as string);
+
+    if (startStation) {
+      sourceStation.value = startStation.id;
+    }
+    if (endStation) {
+      targetStation.value = endStation.id;
+    }
+    if (count) {
+      pathForm.value.bikeCount = parseInt(count as string, 10);
+    }
+    
+    // 如果起点终点都有效，自动规划路径
+    if (startStation && endStation) {
+      await nextTick(); // 等待DOM更新
+      planPath();
     }
   }
 
