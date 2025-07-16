@@ -30,12 +30,72 @@ export interface LLMDispatchSummaryResponse {
   alternativeRoutes?: string; // 备选路线
 }
 
+// 聊天功能相关接口
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatCompletionRequest {
+  messages: ChatMessage[];
+}
+
+export interface ChatCompletionResponse {
+  content: string;
+}
+
 export class LLMService {
   private apiKey: string;
   private baseUrl: string = 'https://api.deepseek.com/v1';
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
+  }
+
+  /**
+   * 发送聊天消息
+   * @param messages 消息历史
+   * @returns 助手回复
+   */
+  async sendChatMessage(messages: ChatMessage[]): Promise<ChatCompletionResponse> {
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/chat/completions`,
+        {
+          model: 'deepseek-chat',
+          messages: [
+            {
+              role: 'system',
+              content: '你是一个智能交通监控与调度平台的助手，名为"智能助手"。你可以帮助用户查询系统数据、执行常见操作和分析趋势。对于系统数据，请使用模拟数据进行回复。你的回答应当专业、简洁且有实用价值。支持对话中的Markdown格式。'
+            },
+            ...messages
+          ],
+          temperature: 0.7,
+          max_tokens: 2000
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`
+          }
+        }
+      );
+      
+      if (response.data && response.data.choices && response.data.choices.length > 0) {
+        const assistantMessage = response.data.choices[0].message.content;
+        return {
+          content: assistantMessage
+        };
+      } else {
+        throw new Error('API返回格式不正确');
+      }
+    } catch (error) {
+      console.error('LLM API调用失败:', error);
+      // 在API调用失败的情况下返回错误信息
+      return {
+        content: '抱歉，我暂时无法连接到服务器。请稍后再试。'
+      };
+    }
   }
 
   /**

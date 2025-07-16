@@ -1221,9 +1221,8 @@ const exportToPDF = async () => {
  */
 const refreshMap = () => {
   if (mapInstance.value) {
-    // 触发地图重新渲染
-    mapInstance.value.setFitView();
-    // 如果上面方法不够，可以尝试以下方法
+    // 只调整大小，不改变视图范围
+    // mapInstance.value.setFitView();
     mapInstance.value.resize();
   }
   

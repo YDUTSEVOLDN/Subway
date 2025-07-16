@@ -10,6 +10,7 @@ import SystemSettings from '@/views/SystemSettings.vue';
 import Profile from '@/views/Profile.vue';
 import Identity from '@/views/Identity.vue';
 import SchedulingPlans from '@/views/SchedulingPlans.vue';
+import IntelligentAssistant from '@/views/IntelligentAssistant.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -112,6 +113,17 @@ const routes: Array<RouteRecordRaw> = [
       title: '个人中心',
       icon: 'UserFilled',
       showInMenu: true
+    }
+  },
+  {
+    path: '/assistant',
+    name: 'assistant',
+    component: IntelligentAssistant,
+    meta: {
+      title: '智能助手',
+      icon: 'ChatDotRound',
+      showInMenu: true,
+      requiresAuth: true
     }
   }
 ];

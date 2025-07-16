@@ -1150,10 +1150,10 @@ defineExpose({
       // 延迟执行resize以确保DOM已完全更新
       setTimeout(() => {
         mapInstance.value.resize();
-        // 重新调整视图以确保所有标记都可见
-        if (mapMarkers.value.length > 0) {
-          mapInstance.value.setFitView(mapMarkers.value);
-        }
+        // 移除下面的代码，不再自动调整视图
+        // if (mapMarkers.value.length > 0) {
+        //   mapInstance.value.setFitView(mapMarkers.value);
+        // }
       }, 100);
     }
   }
