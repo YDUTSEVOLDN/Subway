@@ -1,0 +1,58 @@
+spring:
+  autoconfigure:
+    exclude:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://39.96.195.232/subbike?allowPublicKeyRetrieval=true&setUnicode=true&characterEncoding=utf8&useAffectedRows=true
+    username: admin
+    password: password
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: 2335696445@qq.com
+    from: 2335696445@qq.com
+    password: slrdyhszkxqoebji
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  devtools:
+    restart:
+      enabled: true
+      additional-paths: src/main/java
+      exclude: static/**,public/**
+    livereload:
+      enabled: true
+  logging:
+    level:
+      org.springframework: DEBUG
+
+app:
+  jwt:
+    secret: "2zS+wA/4cApOKSJ+vYODpF83IeU1x+HH2keLluNBFLk="
+    expirationMs: 86400000
+
+server:
+  port: 10086
+  address: 0.0.0.0
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  packages-to-scan: com.example.controller
+  paths-to-match: /api/**
+
+mybatis:
+  type-aliases-package: com.subBike.server.entity
+  mapper-locations: classpath:mapper/*.xml
