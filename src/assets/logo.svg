@@ -40,5 +40,5 @@
     <line x1="100" y1="320" x2="350" y2="320" stroke="#2c3e50" stroke-width="10" />
     
     <text x="200" y="360" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#2c3e50">发际线总和我作队</text>
-  </g>
+    </g>
 </svg> 

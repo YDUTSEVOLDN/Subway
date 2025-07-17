@@ -163,8 +163,8 @@ const handleMouseLeave = () => {
     }
     
     .el-icon {
-      width: 24px;
-      height: 18px;
+        width: 24px;
+        height: 18px;
       color: #ffffff;
     }
   }

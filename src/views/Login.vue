@@ -2,153 +2,153 @@
   <div class="login-container">
     <div class="background-overlay"></div>
     <transition name="fade-in">
-    <div class="login-box">
-      <div class="login-header">
-        <img src="../assets/logo.svg" alt="Logo" class="logo" />
+      <div class="login-box">
+        <div class="login-header">
+          <img src="../assets/logo.svg" alt="Logo" class="logo" />
           <h2 class="title">智慧地铁交通监控与调度平台</h2>
-      </div>
-      
-      <el-tabs v-model="activeTab" class="login-tabs">
-        <el-tab-pane label="登录" name="login">
-          <el-form 
-            ref="loginForm$"
-            :model="loginForm" 
-            :rules="loginRules"
-            label-position="top"
-              class="login-form"
-          >
-            <el-form-item label="用户名" prop="username">
-              <el-input 
-                v-model="loginForm.username" 
-                prefix-icon="User"
-                placeholder="请输入用户名"
-                  size="large"
-              />
-            </el-form-item>
-            
-            <el-form-item label="密码" prop="password">
-              <el-input 
-                v-model="loginForm.password" 
-                prefix-icon="Lock"
-                type="password" 
-                placeholder="请输入密码"
-                show-password
-                  size="large"
-              />
-            </el-form-item>
-            
-            <el-form-item>
-              <div class="remember-forgot">
-                <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-                <el-button link type="primary">忘记密码?</el-button>
-              </div>
-            </el-form-item>
-            
-            <el-form-item>
-              <el-button 
-                type="primary" 
-                :loading="loading" 
-                class="submit-btn"
-                @click="handleLogin"
-                  size="large"
-              >
-                登录
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
+        </div>
         
-        <el-tab-pane label="注册" name="register">
-          <el-form 
-            ref="registerForm$"
-            :model="registerForm" 
-            :rules="registerRules"
-            label-position="top"
+        <el-tabs v-model="activeTab" class="login-tabs">
+          <el-tab-pane label="登录" name="login">
+            <el-form 
+              ref="loginForm$"
+              :model="loginForm" 
+              :rules="loginRules"
+              label-position="top"
               class="login-form"
-          >
-            <el-form-item label="用户名" prop="username">
-              <el-input 
-                v-model="registerForm.username" 
-                prefix-icon="User"
-                placeholder="请输入用户名"
+            >
+              <el-form-item label="用户名" prop="username">
+                <el-input 
+                  v-model="loginForm.username" 
+                  prefix-icon="User"
+                  placeholder="请输入用户名"
                   size="large"
-              />
-            </el-form-item>
-            
-            <el-form-item label="邮箱" prop="email">
-              <el-input 
-                v-model="registerForm.email" 
-                prefix-icon="Message"
-                placeholder="请输入邮箱"
+                />
+              </el-form-item>
+              
+              <el-form-item label="密码" prop="password">
+                <el-input 
+                  v-model="loginForm.password" 
+                  prefix-icon="Lock"
+                  type="password" 
+                  placeholder="请输入密码"
+                  show-password
                   size="large"
-              />
-            </el-form-item>
+                />
+              </el-form-item>
+              
+              <el-form-item>
+                <div class="remember-forgot">
+                  <el-checkbox v-model="rememberMe">记住我</el-checkbox>
+                  <el-button link type="primary">忘记密码?</el-button>
+                </div>
+              </el-form-item>
+              
+              <el-form-item>
+                <el-button 
+                  type="primary" 
+                  :loading="loading" 
+                  class="submit-btn"
+                  @click="handleLogin"
+                  size="large"
+                >
+                  登录
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+          
+          <el-tab-pane label="注册" name="register">
+            <el-form 
+              ref="registerForm$"
+              :model="registerForm" 
+              :rules="registerRules"
+              label-position="top"
+              class="login-form"
+            >
+              <el-form-item label="用户名" prop="username">
+                <el-input 
+                  v-model="registerForm.username" 
+                  prefix-icon="User"
+                  placeholder="请输入用户名"
+                  size="large"
+                />
+              </el-form-item>
+              
+              <el-form-item label="邮箱" prop="email">
+                <el-input 
+                  v-model="registerForm.email" 
+                  prefix-icon="Message"
+                  placeholder="请输入邮箱"
+                  size="large"
+                />
+              </el-form-item>
 
-            <el-form-item label="验证码" prop="verificationCode">
-              <el-input 
-                v-model="registerForm.verificationCode" 
-                prefix-icon="Key"
-                placeholder="请输入6位验证码"
+              <el-form-item label="验证码" prop="verificationCode">
+                <el-input 
+                  v-model="registerForm.verificationCode" 
+                  prefix-icon="Key"
+                  placeholder="请输入6位验证码"
                   size="large"
-              >
-                <template #append>
-                  <el-button 
-                    @click="sendVerificationCode" 
-                    :disabled="isSendingCode || countdown > 0"
-                  >
-                    {{ countdown > 0 ? `${countdown}秒后重试` : '发送验证码' }}
-                  </el-button>
-                </template>
-              </el-input>
-            </el-form-item>
-            
-            <el-form-item label="密码" prop="password">
-              <el-input 
-                v-model="registerForm.password" 
-                prefix-icon="Lock"
-                type="password" 
-                placeholder="请输入密码"
-                show-password
+                >
+                  <template #append>
+                    <el-button 
+                      @click="sendVerificationCode" 
+                      :disabled="isSendingCode || countdown > 0"
+                    >
+                      {{ countdown > 0 ? `${countdown}秒后重试` : '发送验证码' }}
+                    </el-button>
+                  </template>
+                </el-input>
+              </el-form-item>
+              
+              <el-form-item label="密码" prop="password">
+                <el-input 
+                  v-model="registerForm.password" 
+                  prefix-icon="Lock"
+                  type="password" 
+                  placeholder="请输入密码"
+                  show-password
                   size="large"
-              />
-            </el-form-item>
-            
-            <el-form-item label="确认密码" prop="confirmPassword">
-              <el-input 
-                v-model="registerForm.confirmPassword" 
-                prefix-icon="Lock"
-                type="password" 
-                placeholder="请再次输入密码"
-                show-password
+                />
+              </el-form-item>
+              
+              <el-form-item label="确认密码" prop="confirmPassword">
+                <el-input 
+                  v-model="registerForm.confirmPassword" 
+                  prefix-icon="Lock"
+                  type="password" 
+                  placeholder="请再次输入密码"
+                  show-password
                   size="large"
-              />
-            </el-form-item>
-            
-            <el-form-item label="角色" prop="role" v-if="activeTab === 'register'">
-              <div class="role-selection">
-                <el-radio-group v-model="registerForm.role">
-                  <el-radio-button value="user">普通用户</el-radio-button>
-                  <el-radio-button value="manager">单车管理员</el-radio-button>
-                  <el-radio-button value="subway">地铁管理员</el-radio-button>
-                </el-radio-group>
-              </div>
-            </el-form-item>
-            
-            <el-form-item>
-              <el-button 
-                type="primary" 
-                :loading="loading" 
-                class="submit-btn"
-                @click="handleRegister"
+                />
+              </el-form-item>
+              
+              <el-form-item label="角色" prop="role" v-if="activeTab === 'register'">
+                <div class="role-selection">
+                  <el-radio-group v-model="registerForm.role">
+                    <el-radio-button value="user">普通用户</el-radio-button>
+                    <el-radio-button value="manager">单车管理员</el-radio-button>
+                    <el-radio-button value="subway">地铁管理员</el-radio-button>
+                  </el-radio-group>
+                </div>
+              </el-form-item>
+              
+              <el-form-item>
+                <el-button 
+                  type="primary" 
+                  :loading="loading" 
+                  class="submit-btn"
+                  @click="handleRegister"
                   size="large"
-              >
-                注册
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
-      </el-tabs>
-    </div>
+                >
+                  注册
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
     </transition>
   </div>
 </template>
@@ -395,13 +395,13 @@ const handleRegister = () => {
   flex-direction: column;
   align-items: center;
   margin-bottom: 2rem;
-  
+
   .logo {
     height: 120px; // 将高度从55px增加到120px，以更好地显示新logo
     margin-bottom: 1rem;
     object-fit: contain; // 确保logo保持比例
   }
-  
+
   .title {
     font-size: 1.6rem;
     font-weight: 400;
@@ -493,7 +493,7 @@ const handleRegister = () => {
 :deep(.el-input__inner) {
   color: #333 !important;
   height: 42px !important;
-  
+
   &::placeholder {
     color: #999 !important;
   }

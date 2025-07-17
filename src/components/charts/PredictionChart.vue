@@ -71,8 +71,8 @@ watch(availableDates, (newDates) => {
 
 const getButtonText = (date: string) => {
   const index = availableDates.value.indexOf(date);
-  if (index === 0) return '未来24小时';
-  if (index === 1) return '未来24-48小时';
+  if (index === 0) return '后1天';
+  if (index === 1) return '后2天';
   return date;
 };
 
@@ -85,10 +85,10 @@ const setChartOption = () => {
   const currentDayData = (props.predictionData as any)[selectedDate.value];
   if (!currentDayData) return;
 
-  const stationData = currentDayData.filter(d => d.name === props.stationName);
+  const stationData = currentDayData.filter((d: { name: string }) => d.name === props.stationName);
   
-  const inData = stationData.map(d => d.in_num);
-  const outData = stationData.map(d => d.out_num);
+  const inData = stationData.map((d: { in_num: number }) => d.in_num);
+  const outData = stationData.map((d: { out_num: number }) => d.out_num);
   const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
 
   const option: EChartsOption = {

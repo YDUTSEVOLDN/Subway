@@ -60,7 +60,7 @@
               </div>
             </div>
           </div>
-
+          
           <el-divider></el-divider>
 
           <!-- 新增：未来流量预测 -->
@@ -264,13 +264,33 @@ watch(() => mapStore.selectedStation, async (station: Station | null) => {
       const stationName = station.name;
       const predictionForStation: { [key: string]: PredictionRecord[] } = {};
       let hasPrediction = false;
-      Object.keys(typedPredictionData).forEach(date => {
-        const dataForDate = typedPredictionData[date].filter((item: PredictionRecord) => item.name === stationName);
-        if (dataForDate.length > 0) {
-          predictionForStation[date] = dataForDate;
-          hasPrediction = true;
+      
+      // 获取当前选择的日期
+      const currentDate = mapStore.selectedDate;
+      if (currentDate) {
+        // 获取所有日期并排序
+        const allDates = Object.keys(typedPredictionData).sort();
+        // 找到当前日期在排序后日期数组中的索引
+        const currentDateIndex = allDates.indexOf(currentDate);
+        
+        // 如果找到当前日期，并且后面还有日期可用
+        if (currentDateIndex !== -1 && currentDateIndex < allDates.length - 1) {
+          // 获取后续的两天日期
+          const nextDates = allDates.slice(currentDateIndex + 1, currentDateIndex + 3);
+          
+          // 为这两天筛选数据
+          nextDates.forEach(date => {
+            if (typedPredictionData[date]) {
+              const dataForDate = typedPredictionData[date].filter((item: PredictionRecord) => item.name === stationName);
+              if (dataForDate.length > 0) {
+                predictionForStation[date] = dataForDate;
+                hasPrediction = true;
+              }
+            }
+          });
         }
-      });
+      }
+      
       if (hasPrediction) {
         stationPrediction.value = predictionForStation;
       }
@@ -301,8 +321,40 @@ watch(() => mapStore.selectedDate, async (newDate, oldDate) => {
     isTrafficLoading.value = true;
     stationTraffic.value = null;
     bikeStatus.value = null;
+    stationPrediction.value = null; // 重置预测数据
 
     try {
+      // 重新加载预测数据
+      const stationName = mapStore.selectedStation.name;
+      const predictionForStation: { [key: string]: PredictionRecord[] } = {};
+      let hasPrediction = false;
+      
+      // 获取所有日期并排序
+      const allDates = Object.keys(typedPredictionData).sort();
+      // 找到当前日期在排序后日期数组中的索引
+      const currentDateIndex = allDates.indexOf(newDate);
+      
+      // 如果找到当前日期，并且后面还有日期可用
+      if (currentDateIndex !== -1 && currentDateIndex < allDates.length - 1) {
+        // 获取后续的两天日期
+        const nextDates = allDates.slice(currentDateIndex + 1, currentDateIndex + 3);
+        
+        // 为这两天筛选数据
+        nextDates.forEach(date => {
+          if (typedPredictionData[date]) {
+            const dataForDate = typedPredictionData[date].filter((item: PredictionRecord) => item.name === stationName);
+            if (dataForDate.length > 0) {
+              predictionForStation[date] = dataForDate;
+              hasPrediction = true;
+            }
+          }
+        });
+      }
+      
+      if (hasPrediction) {
+        stationPrediction.value = predictionForStation;
+      }
+
       // 重新调用现有的加载函数
       await loadStationTraffic(mapStore.selectedStation.id);
       await loadBikeStatus(mapStore.selectedStation);
