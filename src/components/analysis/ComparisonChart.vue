@@ -86,7 +86,7 @@ function getCompareData() {
     }
     if (stationBData.length > 0) {
       dailyDataB[date] = stationBData.reduce((sum, item) => sum + (item.in_num || 0) + (item.out_num || 0), 0);
-    }
+  }
   });
   
   // 取所有日期的并集，排序
@@ -117,13 +117,13 @@ const fetchData = async () => {
       return;
     }
     chartInstance?.setOption({
-      tooltip: { trigger: 'axis' },
+        tooltip: { trigger: 'axis' },
       legend: { data: result.series.map(s => s.name), top: 'bottom' },
-      grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+        grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
       xAxis: { type: 'category', boundaryGap: false, data: result.labels },
       yAxis: { type: 'value', name: '总客流量' },
       series: result.series
-    }, true);
+      }, true);
   } catch (error) {
     console.error('数据处理失败:', error);
     chartInstance?.clear();

@@ -68,8 +68,21 @@
               </div>
             </div>
           </div>
-          
+
           <el-divider></el-divider>
+
+          <!-- 新增：未来流量预测 -->
+          <div class="prediction-info" v-if="stationPrediction">
+            <h4>未来流量预测</h4>
+            <div class="prediction-chart-container">
+              <PredictionChart 
+                :prediction-data="stationPrediction"
+                :station-name="mapStore.selectedStation.name"
+              />
+            </div>
+          </div>
+          
+          <el-divider v-if="stationPrediction"></el-divider>
           
           <div class="bike-info">
             <div class="bike-header">
@@ -134,12 +147,24 @@ import { useMapStore } from '../stores/mapStore';
 import { useUserStore } from '../stores/userStore'; // 导入用户 store
 import AMapComponent from '../components/common/AMapComponent.vue';
 import TrafficChart from '../components/charts/TrafficChart.vue';
+import PredictionChart from '../components/charts/PredictionChart.vue'; // 1. 导入预测图表组件
 import api from '../api';
 import { useRouter } from 'vue-router';
 import { bikeService } from '../services/bikeService';
 import subwayData from '@/assets/subway_data.json'; // 导入地铁数据
+import predictionData from '@/assets/prediction_data_grouped.json'; // 2. 导入预测数据
 import { CloseBold } from '@element-plus/icons-vue';
 import type { StationBikeStatus } from '@/types';
+
+// 定义预测数据类型
+interface PredictionRecord {
+  name: string;
+  in_num: number;
+  out_num: number;
+}
+interface PredictionData {
+  [date: string]: PredictionRecord[];
+}
 
 // 定义接口类型
 interface TrafficFlowData {
@@ -182,12 +207,17 @@ const userStore = useUserStore(); // 使用用户 store
 const mapRef = ref(null);
 const allStationStatuses = ref<StationBikeStatus[]>([]);
 
+const typedPredictionData: PredictionData = predictionData as any;
+
 // 新增：判断用户是否有权限查看调度信息
 const canDispatch = computed(() => userStore.isAdmin || userStore.isSubwayManager);
 
 // 当前选中站点的流量数据
 const stationTraffic = ref<TrafficFlowData | null>(null);
 const isTrafficLoading = ref(false);
+
+// 3. 为预测数据添加响应式引用
+const stationPrediction = ref<any | null>(null);
 
 // 当前选中站点的共享单车状态 (现在基于真实数据和流量数据计算)
 const bikeStatus = ref<BikeSupplyDemand | null>(null);
@@ -235,8 +265,24 @@ watch(() => mapStore.selectedStation, async (station: Station | null) => {
     isTrafficLoading.value = true;
     stationTraffic.value = null;
     bikeStatus.value = null;
+    stationPrediction.value = null; // 重置预测数据
 
     try {
+      // 4. 筛选并设置预测数据
+      const stationName = station.name;
+      const predictionForStation: { [key: string]: PredictionRecord[] } = {};
+      let hasPrediction = false;
+      Object.keys(typedPredictionData).forEach(date => {
+        const dataForDate = typedPredictionData[date].filter((item: PredictionRecord) => item.name === stationName);
+        if (dataForDate.length > 0) {
+          predictionForStation[date] = dataForDate;
+          hasPrediction = true;
+        }
+      });
+      if (hasPrediction) {
+        stationPrediction.value = predictionForStation;
+      }
+      
       // 修复：串行加载数据，因为 bikeStatus 依赖 traffic
       await loadStationTraffic(station.id);
       await loadBikeStatus(station);
@@ -245,6 +291,7 @@ watch(() => mapStore.selectedStation, async (station: Station | null) => {
       // 即使失败也要清空，避免显示旧数据
       stationTraffic.value = null;
       bikeStatus.value = null;
+      stationPrediction.value = null;
     } finally {
       // 加载结束，隐藏动画
       isTrafficLoading.value = false;
@@ -532,6 +579,15 @@ function closeInfoPanel() {
         text-align: center;
         color: #909399;
         padding: 20px 0;
+      }
+    }
+    
+    .prediction-info {
+      h4 {
+        margin-bottom: 16px;
+      }
+      .prediction-chart-container {
+        /* 高度由图表组件内部控制 */
       }
     }
     
