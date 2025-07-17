@@ -4,7 +4,7 @@
     
     <el-row :gutter="20">
       <el-col :span="12">
-        <RankingChart @station-click="handleStationClick" />
+        <RankingChart />
       </el-col>
       <el-col :span="12">
         <TrendChart />
@@ -15,7 +15,7 @@
         <el-col :span="24">
         <ComparisonChart 
           :stations="stations"
-          v-model:selected-stations="comparisonStationIds" 
+          :initial-selected-ids="comparisonStationIds" 
         />
         </el-col>
       </el-row>
@@ -29,34 +29,21 @@ import TrendChart from '@/components/analysis/TrendChart.vue';
 import ComparisonChart from '@/components/analysis/ComparisonChart.vue';
 import { useMapStore } from '@/stores/mapStore';
 import type { Station } from '@/stores/mapStore';
-import { ElMessage } from 'element-plus';
 
 const stations = ref<Station[]>([]);
 const comparisonStationIds = ref<string[]>([]);
 const mapStore = useMapStore();
 
-const handleStationClick = (stationId: string) => {
-  if (!comparisonStationIds.value.includes(stationId)) {
-    if (comparisonStationIds.value.length >= 5) {
-      ElMessage.warning('最多只能选择 5 个站点进行比较');
-      return;
-    }
-    comparisonStationIds.value.push(stationId);
-  }
-};
-
 onMounted(async () => {
   if (mapStore.stations.length === 0) {
     await mapStore.loadSubwayData();
   }
-  // 使用模拟站点数据进行填充
-  stations.value = mapStore.stations.length > 0 ? mapStore.stations : [
-    { id: '1', name: '人民广场站', lines:[], entrances:0, position: {lng:0, lat:0}},
-    { id: '2', name: '西单站', lines:[], entrances:0, position: {lng:0, lat:0}},
-    { id: '3', name: '东直门站', lines:[], entrances:0, position: {lng:0, lat:0}},
-    { id: '4', name: '北京南站', lines:[], entrances:0, position: {lng:0, lat:0}},
-    { id: '5', name: '国贸站', lines:[], entrances:0, position: {lng:0, lat:0}},
-  ];
+  stations.value = mapStore.stations;
+
+  // 默认选中前两个站点进行比较
+  if (stations.value.length >= 2) {
+    comparisonStationIds.value = [stations.value[0].id, stations.value[1].id];
+  }
 });
 </script>
 

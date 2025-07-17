@@ -316,6 +316,49 @@ export const generateStationComparison = (stationIds: string[], metric: string, 
   return { labels, series };
 };
 
+export const getStationComparison = (stationIds: string[], metric: string, range: string) => {
+  const stationNames = stationIds.map(id => mockStations.find(s => s.id === parseInt(id))?.name || `站点 ${id}`);
+  
+  return {
+    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+    series: stationNames.map(name => ({
+      stationName: name,
+      data: Array.from({ length: 7 }, () => Math.floor(Math.random() * 50000) + 10000)
+    }))
+  };
+};
+
+/**
+ * [新增] 模拟获取两个站点在一段时间内的真实流量数据
+ * @param stationAName 站点A的名称
+ * @param stationBName 站点B的名称
+ */
+import subwayData from '@/assets/subway_data.json';
+
+interface SubwayDataItem {
+  date: string;
+  station: string;
+  in_num: number;
+  out_num: number;
+}
+
+export const getStationComparisonOverTime = (stationAName: string, stationBName: string) => {
+  const typedSubwayData = subwayData as SubwayDataItem[];
+  const dataA = typedSubwayData.filter(item => item.station === stationAName);
+  const dataB = typedSubwayData.filter(item => item.station === stationBName);
+  
+  // 假设 dataA 和 dataB 的日期是同步的
+  const labels = dataA.map(item => item.date.substring(5)); // "07-01"
+  
+  return {
+    labels: labels,
+    series: [
+      { stationName: stationAName, data: dataA.map(item => item.in_num + item.out_num) },
+      { stationName: stationBName, data: dataB.map(item => item.in_num + item.out_num) },
+    ]
+  };
+};
+
 
 /**
  * 模拟API请求的通用函数

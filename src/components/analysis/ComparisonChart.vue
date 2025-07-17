@@ -1,233 +1,177 @@
 <template>
   <el-card>
     <template #header>
-      <div class="card-header-with-filter">
-        <div class="title">站点比较分析</div>
-        <div class="filter-group">
+      <div class="card-header">
+        <span>站点客流量对比</span>
+        <div class="station-selectors">
           <el-select
-            v-model="selectedStationsModel"
-            placeholder="输入站点名称进行搜索"
-            multiple
+            v-model="stationA"
+            placeholder="选择站点 A"
             filterable
-            remote
-            :remote-method="handleRemoteSearch"
-            :loading="searchLoading"
-            collapse-tags
-            collapse-tags-tooltip
-            size="small"
-            style="width: 350px"
-            :max-collapse-tags="3"
+            clearable
+            @change="fetchData"
+            style="width: 180px;"
           >
             <el-option
-              v-for="station in displayOptions"
+              v-for="station in availableStationsA"
               :key="station.id"
               :label="station.name"
               :value="station.id"
             />
           </el-select>
-          <el-select v-model="compareMetric" placeholder="指标" size="small" @change="fetchComparisonData">
-            <el-option label="客流量" value="flow"></el-option>
-            <el-option label="单车周转率" value="rotation"></el-option>
-            <el-option label="供需比" value="supply"></el-option>
+          <span class="vs-text">vs</span>
+          <el-select
+            v-model="stationB"
+            placeholder="选择站点 B"
+            filterable
+            clearable
+            @change="fetchData"
+            style="width: 180px;"
+          >
+            <el-option
+              v-for="station in availableStationsB"
+              :key="station.id"
+              :label="station.name"
+              :value="station.id"
+            />
           </el-select>
         </div>
       </div>
     </template>
-    <div class="chart-container" style="height: 400px; position: relative;">
-      <div v-if="loading" class="loading-overlay">
-        <div class="loading-spinner"></div>
-        <span>加载中...</span>
-      </div>
-      
-      <div v-if="!selectedStationsModel.length && !loading" class="empty-state">
-        <el-empty description="请选择站点进行对比">
-          <p>您可以点击上方排名图中的站点，或在下拉框中选择</p>
-        </el-empty>
-      </div>
-      
-      <div ref="stationCompareChart" class="chart"></div>
-    </div>
+    <div ref="chartRef" class="chart-container"></div>
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import * as echarts from 'echarts';
-import api from '@/api';
+import subwayData from '@/assets/subway_data.json';
 import type { Station } from '@/stores/mapStore';
 import { registerTheme } from '@/config/echartsTheme';
 
 registerTheme();
 
-interface ComparisonData {
-  labels: string[];
-  series: {
-    stationName: string;
-    data: number[];
-  }[];
-}
-
 const props = defineProps<{
   stations: Station[];
-  selectedStations: string[];
+  initialSelectedIds: string[];
 }>();
 
-const emit = defineEmits(['update:selectedStations']);
-
-const selectedStationsModel = computed({
-  get: () => props.selectedStations,
-  set: (value) => emit('update:selectedStations', value)
-});
-
-const filteredStations = ref<Station[]>([]);
-const searchLoading = ref(false);
-
-const displayOptions = computed(() => {
-  const selected = props.selectedStations
-    .map(id => props.stations.find(s => s.id === id))
-    .filter((s): s is Station => s !== undefined);
-
-  const combined = [...selected, ...filteredStations.value];
-  const uniqueIds = new Set();
-  return combined.filter(station => {
-    if (!uniqueIds.has(station.id)) {
-      uniqueIds.add(station.id);
-      return true;
-    }
-    return false;
-  });
-});
-
-const handleRemoteSearch = (query: string) => {
-  if (query) {
-    searchLoading.value = true;
-    setTimeout(() => {
-      filteredStations.value = props.stations.filter(station =>
-        station.name.toLowerCase().includes(query.toLowerCase())
-      );
-      searchLoading.value = false;
-    }, 200); // Simulate network delay
-  } else {
-    filteredStations.value = [];
-  }
-};
-
-const compareMetric = ref('flow');
-const stationCompareChart = ref<HTMLElement | null>(null);
-const loading = ref(false);
+const chartRef = ref<HTMLElement | null>(null);
 let chartInstance: echarts.ECharts | null = null;
 
-const fetchComparisonData = async () => {
-  if (selectedStationsModel.value.length === 0) {
+const stationA = ref('');
+const stationB = ref('');
+
+const availableStationsA = computed(() => props.stations.filter(s => s.id !== stationB.value));
+const availableStationsB = computed(() => props.stations.filter(s => s.id !== stationA.value));
+
+// 处理数据
+function getCompareData() {
+  const stationAName = props.stations.find(s => s.id === stationA.value)?.name;
+  const stationBName = props.stations.find(s => s.id === stationB.value)?.name;
+  if (!stationAName || !stationBName) return { labels: [], series: [] };
+
+  // 按天总量
+  const dailyDataA: { [date: string]: number } = {};
+  const dailyDataB: { [date: string]: number } = {};
+  
+  // 遍历所有日期的数据
+  Object.entries(subwayData).forEach(([date, dayData]) => {
+    const dayArray = dayData as any[];
+    const stationAData = dayArray.filter(item => item.name === stationAName);
+    const stationBData = dayArray.filter(item => item.name === stationBName);
+    
+    if (stationAData.length > 0) {
+      dailyDataA[date] = stationAData.reduce((sum, item) => sum + (item.in_num || 0) + (item.out_num || 0), 0);
+    }
+    if (stationBData.length > 0) {
+      dailyDataB[date] = stationBData.reduce((sum, item) => sum + (item.in_num || 0) + (item.out_num || 0), 0);
+    }
+  });
+  
+  // 取所有日期的并集，排序
+  const allDates = Array.from(new Set([...Object.keys(dailyDataA), ...Object.keys(dailyDataB)])).sort();
+  
+  return {
+    labels: allDates.map(d => d.substring(5)), // 只显示月-日
+    series: [
+      { name: stationAName, type: 'line', smooth: true, data: allDates.map(d => dailyDataA[d] || 0) },
+      { name: stationBName, type: 'line', smooth: true, data: allDates.map(d => dailyDataB[d] || 0) },
+    ]
+  };
+}
+
+const fetchData = async () => {
+  await nextTick();
+  if (!stationA.value || !stationB.value) {
     chartInstance?.clear();
     return;
   }
-  loading.value = true;
+  chartInstance?.showLoading();
   try {
-    const data: ComparisonData = await api.getStationComparison(
-      selectedStationsModel.value,
-      compareMetric.value,
-      'last7days'
-    );
-    await nextTick();
-    if (chartInstance) {
-      chartInstance.setOption({
-        tooltip: { trigger: 'axis' },
-        legend: { data: data.series.map(s => s.stationName), top: 'bottom' },
-        grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
-        xAxis: { type: 'category', boundaryGap: false, data: data.labels },
-        yAxis: { type: 'value' },
-        series: data.series.map(s => ({
-          name: s.stationName,
-          type: 'line',
-          data: s.data
-        }))
-      }, true);
+    const result = getCompareData();
+    console.log('ComparisonChart 数据结果:', result);
+    if (!result || result.labels.length === 0) {
+      console.log('没有数据，清空图表');
+      chartInstance?.clear();
+      return;
     }
+    chartInstance?.setOption({
+      tooltip: { trigger: 'axis' },
+      legend: { data: result.series.map(s => s.name), top: 'bottom' },
+      grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+      xAxis: { type: 'category', boundaryGap: false, data: result.labels },
+      yAxis: { type: 'value', name: '总客流量' },
+      series: result.series
+    }, true);
   } catch (error) {
-    console.error("Failed to fetch station comparison:", error);
+    console.error('数据处理失败:', error);
+    chartInstance?.clear();
   } finally {
-    loading.value = false;
+    chartInstance?.hideLoading();
   }
 };
 
-watch(selectedStationsModel, () => {
-  fetchComparisonData();
-  // After selection, clear the filtered options to force user to type again
-  // for a new search, which feels like the input is cleared.
-  filteredStations.value = [];
-}, { deep: true });
+watch([stationA, stationB], fetchData);
+
+watch(() => props.initialSelectedIds, (newIds) => {
+  if (newIds && newIds.length >= 2) {
+    stationA.value = newIds[0];
+    stationB.value = newIds[1];
+    fetchData();
+  }
+}, { immediate: true });
 
 onMounted(() => {
-  filteredStations.value = props.stations.slice(0, 10); // Show some initial options
-  if (stationCompareChart.value) {
-    chartInstance = echarts.init(stationCompareChart.value, 'customTheme');
-    fetchComparisonData();
+  if (chartRef.value) {
+    chartInstance = echarts.init(chartRef.value, 'customTheme');
+    if (props.initialSelectedIds.length >= 2) {
+      stationA.value = props.initialSelectedIds[0];
+      stationB.value = props.initialSelectedIds[1];
+      fetchData();
+    }
     window.addEventListener('resize', () => chartInstance?.resize());
   }
-});
-
-onUnmounted(() => {
-  window.removeEventListener('resize', () => chartInstance?.resize());
-  chartInstance?.dispose();
 });
 </script>
 
 <style scoped>
-.card-header-with-filter {
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.filter-group {
+.station-selectors {
   display: flex;
+  align-items: center;
   gap: 10px;
+}
+.vs-text {
+  color: #909399;
+  font-weight: bold;
 }
 .chart-container {
   height: 400px;
   width: 100%;
-  position: relative;
-}
-.chart {
-  height: 100%;
-  width: 100%;
-}
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
-}
-.loading-spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 10px;
-}
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-.empty-state {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  text-align: center;
-  color: #909399;
-}
-.empty-state p {
-  font-size: 14px;
-  margin-top: 8px;
 }
 </style> 
